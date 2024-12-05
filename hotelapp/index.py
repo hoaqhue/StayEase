@@ -10,7 +10,7 @@ from hotelapp.decorators import loggedin
 def index():
     room_types = dao.get_room_types()
     to_day = datetime.now().date()
-    next_28_day = datetime.today() + timedelta(days=28) #mai mốt thay quy định zô
+    next_28_day = datetime.today() + timedelta(days=28)
     return render_template('index.html', room_types=room_types, to_day=to_day, next_28_day=next_28_day)
 
 
