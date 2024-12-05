@@ -1,8 +1,9 @@
 from email.policy import default
 
+from flask_login import UserMixin
 from flask_sqlalchemy.model import Model
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, Date
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Relationship
 from hotelapp import app, db
 
 
@@ -38,12 +39,13 @@ class ClientType(db.Model):
         return self.type
 
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(20), nullable=False, unique=True)
     password = Column(String(100), nullable=False)
     user_role_id = Column(Integer, ForeignKey('user_role.id'), nullable=False)
     client_id = Column(Integer, ForeignKey('client.id'), nullable=True)
+    user_role = relationship('UserRole' , backref='user', lazy=False)
 
     def __str__(self):
         return self.username
@@ -52,7 +54,7 @@ class User(db.Model):
 class Regulation(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     key = Column(String(50), nullable=False)
-    value = Column(String(50), nullable=False)
+    value = Column(Float, nullable=False)
     updated_by = Column(Integer, ForeignKey('user.id'), nullable=True)
     updated_date = Column(Date)
 
@@ -168,7 +170,8 @@ class Room(db.Model):
     name = Column(String(50), nullable=True, unique=True)
     room_status_id = Column(Integer, ForeignKey('room_status.id'), nullable=True)
     room_type_id = Column(Integer, ForeignKey('room_type.id'), nullable=True)
-
+    room_status = Relationship('RoomStatus', lazy=True, backref='room')
+    room_type = Relationship('RoomType', lazy=True, backref='room')
     def __str__(self):
         return self.name
 
@@ -184,3 +187,4 @@ class RoomType(db.Model):
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
+        # db.session.commit()
