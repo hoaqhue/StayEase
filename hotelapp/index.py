@@ -6,7 +6,7 @@ from flask_login import login_user
 from hotelapp import app, dao, login
 from hotelapp.decorators import loggedin
 
-@app.route('/') #ai gõ :))) ém, ko cần chaykj lại ctrl S là đc
+@app.route('/')
 def index():
     room_types = dao.get_room_types()
     to_day = datetime.now().date()
