@@ -1,0 +1,194 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<h1 class="text-center text-info mt-1">THỐNG KÊ BÁO CÁO</h1>
+
+<div class="row">
+    <div class="col-md-7 col-12">
+        <label for="month">Báo cáo doanh thu theo tháng</label>
+        <select id="month" class="form-control mb-2">
+            {% for i in range(12) %}
+            {% if i + 1 == current_month %}
+            <option value="{{ i + 1 }}" selected>Tháng {{ i + 1 }}</option>
+            {% else %}
+            <option value="{{ i + 1 }}">Tháng {{ i + 1 }}</option>
+            {% endif %}
+            {% endfor %}
+        </select>
+        <label for="year">Năm thống kê:</label>
+        <select id="year" class="form-control">
+                {% for i in range(current_year - 3, current_year + 3) %}
+                    {% if i == current_year %}
+                        <option value="{{ i }}" selected>{{ i }}</option>
+                    {% else %}
+                        <option value="{{ i }}">{{ i }}</option>
+                    {% endif %}
+                {% endfor %}
+        </select>
+        <table id="revenueTable" class="table">
+            <tr>
+                <th>Id</th>
+                <th>Loại phòng</th>
+                <th>Doanh thu</th>
+                <th>Số lượt thuê</th>
+                <th>Tỷ lệ</th>
+            </tr>
+            {% for s in revenue_by_route %}
+            <tr>
+                <td>{{ s[0] }}</td>
+                <td>{{ s[1] }}</td>
+                <td>
+                    {% if s[2] %}
+                    {{ "{:,.0f}".format(s[2]) }} VNĐ
+                    {% else %}
+                    0 VNĐ
+                    {% endif %}
+                </td>
+                <td>
+                    {{ s[3] }}
+                </td>
+                <td>
+                    {{ "{:.2%}".format(s[2]/total) if total else 0 }}
+                </td>
+            </tr>
+            {% endfor %}
+
+            <tr>
+                <td></td>
+                <th>Tổng doanh thu</th>
+                <td>{% if total %}
+                    {{ "{:,.0f}".format(total) }} VNĐ
+                    {% else %}
+                    0 VNĐ
+                    {% endif %}
+                </td>
+                <td></td>
+                <td></td>
+            </tr>
+        </table>
+
+        <button type="submit" onclick="updateStats()" class="btn btn-primary">Thống kê</button>
+    </div>
+    <div class="col-md-5 col-12">
+        <canvas id="myChart1"></canvas>
+    </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/stats.js') }}"></script>
+<script>
+    let labels = [];
+    let data = [];
+    {% for s in revenue_by_route %}
+        {% if s[2] %}
+        data.push({{ s[2] }});
+        {% else %}
+        data.push(0);
+        {% endif %}
+        labels.push('{{ s[1] }}');
+    {% endfor %}
+    function updateStats() {
+        // Lấy giá trị tháng và năm mới
+        var month = document.getElementById("month").value;
+        var year = document.getElementById("year").value;
+
+        fetch('/admin/update_stats', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ month: month, year: year })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Lấy dữ liệu mới
+            revenue_by_route = data["revenue_by_route"]
+            total = data["total"]
+
+
+            // Cập nhật bảng
+            updateTable(revenue_by_route, total);
+
+            // Cập nhật biểu đồ 1
+            updateChart(revenue_by_route);
+
+            // Cập nhật biểu đồ 2 (nếu cần)
+            // Cần tạo hàm tương tự updateChart cho biểu đồ 2
+
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function updateTable(revenue_by_route, total) {
+        var tableBody = document.querySelector("#revenueTable tbody");
+
+        tableBody.innerHTML = `<tr>
+                <th>Id</th>
+                <th>Tuyến bay</th>
+                <th>Doanh thu</th>
+                <th>Số lượt bay</th>
+                <th>Tỷ lệ</th>
+            </tr>`
+
+        // Thêm dữ liệu mới vào bảng
+        for (var i = 0; i < revenue_by_route.length; i++) {
+            var rowData = revenue_by_route[i];
+            var row = document.createElement("tr");
+
+            // Tạo và thêm các ô td vào hàng
+            var idCell = document.createElement("td");
+            idCell.textContent = rowData[0];
+            row.appendChild(idCell);
+
+            var nameCell = document.createElement("td");
+            nameCell.textContent = rowData[1];
+            row.appendChild(nameCell);
+
+            var revenueCell = document.createElement("td");
+            revenueCell.textContent = rowData[2] ? rowData[2].toLocaleString() + " VNĐ" : "0 VNĐ";
+            row.appendChild(revenueCell);
+
+            var flightsCell = document.createElement("td");
+            flightsCell.textContent = rowData[3];
+            row.appendChild(flightsCell);
+
+            var percentageCell = document.createElement("td");
+            percentageCell.textContent = total ? (rowData[2] / total * 100).toFixed(2) + "%" : "0%";
+            row.appendChild(percentageCell);
+
+            // Thêm hàng mới vào bảng
+            tableBody.appendChild(row);
+        }
+        var totalRow = document.createElement("tr");
+            totalRow.innerHTML = `
+                <td></td>
+                <th>Tổng doanh thu</th>
+                <td>${total.toLocaleString()} VNĐ</td>
+                <td></td>
+                <td></td>
+            `;
+        tableBody.appendChild(totalRow);
+    }
+
+    function updateChart(revenue_by_route) {
+        // Cập nhật biểu đồ với dữ liệu mới
+        var labels = [];
+        var data = [];
+
+        for (var i = 0; i < revenue_by_route.length; i++) {
+            var s = revenue_by_route[i];
+            labels.push(s[1]);
+            data.push(s[2]);
+        }
+
+
+        // Draw the new chart
+        drawChart("pie", data, labels, "myChart1", "Doanh thu");
+    }
+
+    window.onload = function() {
+        drawChart("pie", data, labels, "myChart1", "Doanh thu");
+    }
+</script>
+{% endblock %}

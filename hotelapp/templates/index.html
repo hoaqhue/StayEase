@@ -1,0 +1,75 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Trang chủ{% endblock %}
+
+{% block content %}
+<div class="container text-center shadow rounded mt-4">
+    <h1 class="text-primary">Tìm phòng</h1>
+    <form method="post" action="/search_rooms" class="p-2" id="searchForm">
+        <div class="row align-items-center">
+            <div class="col col-md-2 col-3">
+                <label>Ngày nhận phòng:</label>
+            </div>
+            <div class="col col-md-4 col-9 mb-2">
+                <input type="date" class="form-control" id="checkin_date" name="checkin_date" required max="{{ next_28_day }}" onchange="updateCheckoutMinDate()">
+            </div>
+            <div class="col col-md-2 col-3">
+                <label>Ngày trả phòng:</label>
+            </div>
+            <div class="col col-md-4 col-9 mb-2">
+                <input type="date" class="form-control" id="checkout_date" name="checkout_date" required min="">
+            </div>
+            <div class="col col-md-2 col-3">
+                <label>Loại phòng:</label>
+            </div>
+            <div class="col col-md-4 col-9 mb-2">
+                <select class="form-select" aria-label="Default select example" name="ticket_class">
+                    <option value="" selected disabled>Loại phòng</option>
+                    {% for i in room_types %}
+                    <option value="{{ i.id }}">{{ i.type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col col-md-2 col-3">
+                <label>Số lượng khách</label>
+            </div>
+            <div class="col col-md-4 col-9">
+                <input type="number" class="form-control" value="1" min="1" max="3" step="1" name="passengers">
+            </div>
+        </div>
+        <div class="row align-items-center mb-2">
+        </div>
+        <input type="submit" value="Tra cứu" class="btn btn-success">
+    </form>
+</div>
+<script>
+    document.getElementById('searchForm').addEventListener('submit', function(event) {
+        var departure = document.getElementById('departure').value;
+        var destination = document.getElementById('destination').value;
+
+        if (departure === destination) {
+            event.preventDefault(); // Ngăn form submit
+            alert("Điểm đi và điểm đến không thể giống nhau.");
+            return false;
+        }
+    });
+    function updateCheckoutMinDate() {
+        const checkinDate = document.getElementById('checkin_date');
+        const checkoutDate = document.getElementById('checkout_date');
+
+        if (checkinDate.value) {
+            // Set minimum checkout date to the day after check-in
+            const minCheckoutDate = new Date(checkinDate.value);
+            minCheckoutDate.setDate(minCheckoutDate.getDate() + 1);
+
+            checkoutDate.min = minCheckoutDate.toISOString().split('T')[0];
+
+            // Clear previous checkout date if it's invalid
+            if (new Date(checkoutDate.value) <= new Date(checkinDate.value)) {
+                checkoutDate.value = '';
+            }
+        }
+    }
+</script>
+{% endblock %}
