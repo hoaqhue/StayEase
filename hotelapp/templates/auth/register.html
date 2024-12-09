@@ -19,18 +19,34 @@
     </div>
 
     <div class="form-floating mb-3 mt-3">
-        <input type="text" class="form-control" id="cccd" placeholder="Tên đăng nhập" name="cccd" required>
-        <label for="username">Căn cước công dân</label>
+        <input type="text" class="form-control" id="identification_code" placeholder="Căn cước công dân"
+               name="identification_code" required>
+        <label for="identification_code">Căn cước công dân</label>
     </div>
 
     <div class="form-floating mb-3 mt-3">
-        <input type="text" class="form-control" id="phoneNumber" placeholder="Tên đăng nhập" name="phoneNumber" required>
-        <label for="username">Số điện thoại</label>
+        <input type="text" class="form-control" id="phoneNumber" placeholder="Số điện thoại" name="phoneNumber"
+               required>
+        <label for="phoneNumber">Số điện thoại</label>
     </div>
 
     <div class="form-floating mb-3 mt-3">
-        <input type="email" class="form-control" id="email" placeholder="Tên đăng nhập" name="email" required>
-        <label for="username">Email</label>
+        <input type="email" class="form-control" id="email" placeholder="Email" name="email" required>
+        <label for="email">Email</label>
+    </div>
+
+    <div class="form-floating mb-3 mt-3">
+        <input type="text" class="form-control" id="address" placeholder="Địa chỉ" name="address" required>
+        <label for="address">Địa chỉ</label>
+    </div>
+
+    <div class="mb-2 mt-3">
+        <select class="form-select" aria-label="Default select example" name="client_type_id">
+            <option value="" selected disabled>Loại khách</option>
+            {% for i in client_types %}
+            <option value="{{ i.id }}">{{ i.type }}</option>
+            {% endfor %}
+        </select>
     </div>
 
     <div class="form-floating mt-3 mb-3">
@@ -39,7 +55,8 @@
     </div>
 
     <div class="form-floating mt-3 mb-3">
-        <input type="password" class="form-control" id="confirm" placeholder="Xác nhận mật khẩu" name="confirm" required>
+        <input type="password" class="form-control" id="confirm" placeholder="Xác nhận mật khẩu" name="confirm"
+               required>
         <label for="confirm">Xác nhận mật khẩu</label>
     </div>
 

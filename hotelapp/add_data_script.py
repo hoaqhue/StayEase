@@ -45,7 +45,8 @@ def seed_database():
     # User Roles
     admin_role = UserRole(type='Admin')
     receptionist_role = UserRole(type='Receptionist')
-    db.session.add_all([admin_role, receptionist_role])
+    client_role = UserRole(type='Client')
+    db.session.add_all([admin_role, receptionist_role, client_role])
     db.session.flush()  # Flush to get IDs
 
     # Admin Client
