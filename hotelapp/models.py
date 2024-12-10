@@ -172,6 +172,7 @@ class Room(db.Model):
     room_type_id = Column(Integer, ForeignKey('room_type.id'), nullable=True)
     room_status = Relationship('RoomStatus', lazy=True, backref='room')
     room_type = Relationship('RoomType', lazy=True, backref='room')
+    images = Relationship('Image', backref='room', cascade='all, delete-orphan')
     def __str__(self):
         return self.name
 
