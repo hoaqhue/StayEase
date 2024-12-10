@@ -15,6 +15,9 @@ app.secret_key = "1231231782889dbdyq8wdhqiwjkjnsa3casc"
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:%s@localhost/hoteldb?charset=utf8mb4" % quote('Admin@123')
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 app.config["PAGE_SIZE"] = 2
+app.config["CLOUDINARY_CLOUD_NAME"] = "dj4slrwsl"
+app.config["CLOUDINARY_API_KEY"] = "179444416465962"
+app.config["CLOUDINARY_API_SECRET"] = "FQBLsNVEVMPyozMSHih0PzYVxn8"
 
 db = SQLAlchemy(app)
 login = LoginManager(app)
