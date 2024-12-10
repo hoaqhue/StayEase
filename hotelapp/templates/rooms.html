@@ -1,0 +1,54 @@
+{% extends 'layout/base.html' %}
+{% block title %}Danh sách phòng{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Danh sách phòng</h1>
+
+    <div class="row">
+        {% for room in rooms %}
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm">
+                <!-- Hình ảnh phòng -->
+                <div id="carousel-{{ room.id }}" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-inner">
+                        {% for image in room.images %}
+                        <div class="carousel-item {% if loop.first %}active{% endif %}">
+                            <img src="{{ image.url }}" class="d-block w-100" alt="Room Image"
+                                 style="height: 200px; object-fit: cover;">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if room.images|length > 1 %}
+                    <button class="carousel-control-prev" type="button" data-bs-target="#carousel-{{ room.id }}"
+                            data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#carousel-{{ room.id }}"
+                            data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                    {% endif %}
+                </div>
+
+                <!-- Nội dung chi tiết -->
+                <div class="card-body">
+                    <h5 class="card-title text-center">{{ room.name }}</h5>
+                    <p class="card-text text-muted text-center">{{ room.description }}</p>
+                    <p class="card-text text-center"><strong>Giá:</strong> {{ room.price }} VND</p>
+                    <div class="d-grid">
+                        <a href="{{ url_for('booking', room_id=room.id) }}" class="btn btn-primary">Đặt ngay</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <p class="text-center text-muted">Không có phòng phù hợp với yêu cầu của bạn.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

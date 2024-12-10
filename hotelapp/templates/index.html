@@ -11,13 +11,13 @@
                 <label>Ngày nhận phòng:</label>
             </div>
             <div class="col col-md-4 col-9 mb-2">
-                <input type="date" class="form-control" id="checkin_date" name="checkin_date" required max="{{ next_28_day }}" onchange="updateCheckoutMinDate()">
+                <input type="date" class="form-control" id="check_in_date" name="check_in_date" required max="{{ next_28_day }}" onchange="updateCheckoutMinDate()">
             </div>
             <div class="col col-md-2 col-3">
                 <label>Ngày trả phòng:</label>
             </div>
             <div class="col col-md-4 col-9 mb-2">
-                <input type="date" class="form-control" id="checkout_date" name="checkout_date" required min="">
+                <input type="date" class="form-control" id="check_out_date" name="check_out_date" required min="">
             </div>
             <div class="col col-md-2 col-3">
                 <label>Loại phòng:</label>
@@ -43,33 +43,6 @@
         <input type="submit" value="Tra cứu" class="btn btn-success">
     </form>
 </div>
-<script>
-    document.getElementById('searchForm').addEventListener('submit', function(event) {
-        var departure = document.getElementById('departure').value;
-        var destination = document.getElementById('destination').value;
 
-        if (departure === destination) {
-            event.preventDefault(); // Ngăn form submit
-            alert("Điểm đi và điểm đến không thể giống nhau.");
-            return false;
-        }
-    });
-    function updateCheckoutMinDate() {
-        const checkinDate = document.getElementById('checkin_date');
-        const checkoutDate = document.getElementById('checkout_date');
 
-        if (checkinDate.value) {
-            // Set minimum checkout date to the day after check-in
-            const minCheckoutDate = new Date(checkinDate.value);
-            minCheckoutDate.setDate(minCheckoutDate.getDate() + 1);
-
-            checkoutDate.min = minCheckoutDate.toISOString().split('T')[0];
-
-            // Clear previous checkout date if it's invalid
-            if (new Date(checkoutDate.value) <= new Date(checkinDate.value)) {
-                checkoutDate.value = '';
-            }
-        }
-    }
-</script>
 {% endblock %}

@@ -7,7 +7,7 @@
         <div class="collapse navbar-collapse" id="collapsibleNavbar">
 
             <ul class="navbar-nav me-auto">
-                <a class="nav-link active" href="#">Trang chủ</a>
+                <a class="nav-link active" href="/">Trang chủ</a>
                 {% for c in categories%}
                 <li class="nav-item">
                     <a class="nav-link" href="?category_id={{c.id}}">{{c.name}}</a>
@@ -22,14 +22,17 @@
                     <a class="nav-link text-info" href="/login">&#128110; Đăng nhập</a>
                 </li>
                 <li class="nav-item">
+                    <a  class="nav-link text-info" href="/rooms">Danh sách phòng</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link text-info" href="/register">&#128110; Đăng ký</a>
                 </li>
                 {%endif%}
             </ul>
-<!--            <form class="d-flex">-->
-<!--                <input class="form-control me-2" name="q" type="text" placeholder="Nhập từ khóa...">-->
-<!--                <button class="btn btn-primary" type="submit">Tìm</button>-->
-<!--            </form>-->
+            <!--            <form class="d-flex">-->
+            <!--                <input class="form-control me-2" name="q" type="text" placeholder="Nhập từ khóa...">-->
+            <!--                <button class="btn btn-primary" type="submit">Tìm</button>-->
+            <!--            </form>-->
         </div>
     </div>
 </nav>

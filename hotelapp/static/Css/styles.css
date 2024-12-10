@@ -1,0 +1,27 @@
+/* Đảm bảo box-sizing hoạt động đúng */
+* {
+    box-sizing: border-box;
+}
+
+/* Cấu hình grid cho các phòng */
+.rooms {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* Chia thành 3 cột */
+    gap: 20px; /* Khoảng cách giữa các cột */
+    padding: 10px;
+}
+
+/* Mỗi phòng */
+.room {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Ảnh phòng */
+.room-images img {
+   margin: 10px;
+    height: auto;
+    margin-bottom: 10px;
+}
