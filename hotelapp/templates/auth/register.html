@@ -4,9 +4,6 @@
 
 {% block content %}
 <h1 class="text-center text-info mt-1">ĐĂNG KÝ NGƯỜI DÙNG</h1>
-{% if err_msg %}
-<div class="alert alert-danger">{{ err_msg }}</div>
-{% endif %}
 <form method="post" action="/register" enctype="multipart/form-data">
     <div class="form-floating mb-3 mt-3">
         <input type="text" class="form-control" id="name" placeholder="Họ tên" name="name" required>
@@ -65,4 +62,7 @@
         <button class="btn btn-success" type="submit">Đăng ký</button>
     </div>
 </form>
+{% if err_msg %}
+<div class="alert alert-danger">{{ err_msg }}</div>
+{% endif %}
 {% endblock %}

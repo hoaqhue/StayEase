@@ -24,9 +24,8 @@ def get_room_types():
 def get_user_role(role):
     return UserRole.query.filter(UserRole.type.__eq__(role)).first()
 
-
 def create_user(name, username, password, identification_code, phone_number, email, address, client_type_id):
-    role = get_user_role('Client')
+    role = get_user_role('Guest')
     password = str(hashlib.md5(password.strip().encode('utf-8')).hexdigest())
     client = Client(full_name=name, identification_code=identification_code, address=address, phone_number=phone_number, email=email, client_type_id=client_type_id)
     db.session.add(client)
@@ -39,7 +38,21 @@ def create_user(name, username, password, identification_code, phone_number, ema
 def get_client_types():
     return ClientType.query.all()
 
+
 if __name__ == "__main__":
     with app.app_context():
         print(auth_user("admin", "123456"))
         print("Database loaded successfully!")
+
+
+# Ví dụ về hàm kiểm tra số điện thoại đã tồn tại
+def get_client_by_phone(phone_number):
+    return Client.query.filter_by(phone_number=phone_number).first()
+
+
+def get_client_by_identification_code(identification_code):
+    return Client.query.filter_by(identification_code=identification_code).first()
+
+
+def get_client_by_email(email):
+    return Client.query.filter_by(email=email).first()

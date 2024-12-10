@@ -1,0 +1,61 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Đặt phòng{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Đặt phòng khách sạn</h1>
+
+    <form method="POST" action="{{ url_for('booking', room_id=room.id) }}" class="shadow p-4 bg-light rounded">
+        <!-- Tên khách hàng -->
+        <div class="mb-3">
+            <label for="client_id" class="form-label">Tên khách hàng:</label>
+            <select id="client_id" name="client_id" class="form-select" required>
+                <option value="" disabled selected>Chọn khách hàng</option>
+                {% for client in clients %}
+                    <option value="{{ client.id }}">{{ client.full_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Ngày nhận phòng -->
+        <div class="mb-3">
+            <label for="check_in_date" class="form-label">Ngày nhận phòng:</label>
+            <input type="date" id="check_in_date" name="check_in_date" class="form-control"
+                   required min="{{ today }}" max="{{ max_check_in | default('') }}" value="{{ today }}"
+                   onchange="updateCheckoutMinDate()">
+        </div>
+
+        <!-- Ngày trả phòng -->
+        <div class="mb-3">
+            <label for="check_out_date" class="form-label">Ngày trả phòng:</label>
+            <input type="date" id="check_out_date" name="check_out_date" class="form-control"
+                   required min="{{ today }}" max="{{ max_check_out | default('') }}" value="{{ today }}">
+        </div>
+
+        <!-- Nút gửi form -->
+        <div class="d-grid">
+            <button type="submit" class="btn btn-primary">Đặt phòng</button>
+        </div>
+    </form>
+
+    <!-- Thông báo thành công -->
+    {% if success %}
+        <div class="alert alert-success mt-4 d-flex align-items-center" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            {{ success }}
+        </div>
+    {% endif %}
+
+    <!-- Thông báo lỗi -->
+    {% if error %}
+        <div class="alert alert-danger mt-4 d-flex align-items-center" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            {{ error }}
+        </div>
+    {% endif %}
+</div>
+
+
+
+{% endblock %}

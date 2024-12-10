@@ -1,7 +1,4 @@
-from email.policy import default
-
 from flask_login import UserMixin
-from flask_sqlalchemy.model import Model
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, Date
 from sqlalchemy.orm import relationship, Relationship
 from hotelapp import app, db
@@ -25,6 +22,7 @@ class Client(db.Model):
     phone_number = Column(String(50), nullable=True, unique=True)
     email = Column(String(50), nullable=False)
     client_type_id = Column(Integer, ForeignKey('client_type.id'), nullable=True)
+    booking_forms = db.relationship("BookingForm", backref="client", cascade="all, delete-orphan")
 
     def __str__(self):
         return self.full_name
@@ -45,7 +43,8 @@ class User(db.Model, UserMixin):
     password = Column(String(100), nullable=False)
     user_role_id = Column(Integer, ForeignKey('user_role.id'), nullable=False)
     client_id = Column(Integer, ForeignKey('client.id'), nullable=True)
-    user_role = relationship('UserRole' , backref='user', lazy=False)
+    user_role = relationship('UserRole', backref='user', lazy=False)
+
 
     def __str__(self):
         return self.username
@@ -152,6 +151,8 @@ class Image(db.Model):
     url = Column(String(200),
                  default="https://res.cloudinary.com/dj4slrwsl/image/upload/v1733044164/PMC_3922re2-7a204d0f28cc4d2abacf951df89d19d5_nzuu38.jpg")
     room_id = Column(Integer, ForeignKey('room.id'), nullable=True)
+    room = db.relationship('Room', back_populates='images')
+
 
     def __str__(self):
         return f"Image {self.id}"
@@ -170,9 +171,10 @@ class Room(db.Model):
     name = Column(String(50), nullable=True, unique=True)
     room_status_id = Column(Integer, ForeignKey('room_status.id'), nullable=True)
     room_type_id = Column(Integer, ForeignKey('room_type.id'), nullable=True)
+    price = Column(Integer, nullable=True)
     room_status = Relationship('RoomStatus', lazy=True, backref='room')
     room_type = Relationship('RoomType', lazy=True, backref='room')
-    images = Relationship('Image', backref='room', cascade='all, delete-orphan')
+    images = db.relationship('Image', back_populates='room')
     def __str__(self):
         return self.name
 
@@ -184,6 +186,7 @@ class RoomType(db.Model):
 
     def __str__(self):
         return self.type
+
 
 if __name__ == "__main__":
     with app.app_context():
