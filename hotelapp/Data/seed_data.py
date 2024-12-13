@@ -1,7 +1,7 @@
 from hotelapp import db, app
 from hotelapp.models import (
     RoomType, RoomStatus, ClientType, UserRole,
-    PaymentMethod, Room, Client, User, Image, Regulation
+    PaymentMethod, Room, Client, User, Image, Regulation, BookingForm, BookingRoomDetails
 )
 import hashlib
 from datetime import datetime
@@ -10,8 +10,11 @@ from datetime import datetime
 def seed_data():
     try:
         # Xóa dữ liệu cũ
-        db.session.query(Client).delete()
+        db.session.query(BookingRoomDetails).delete()
+        db.session.query(BookingForm).delete()
+        db.session.query(Image).delete()
         db.session.query(User).delete()
+        db.session.query(Client).delete()
         db.session.query(UserRole).delete()
         db.session.query(PaymentMethod).delete()
         db.session.query(Room).delete()
@@ -19,24 +22,23 @@ def seed_data():
         db.session.query(RoomType).delete()
         db.session.query(ClientType).delete()
         db.session.query(Regulation).delete()
-        db.session.query(Image).delete()
 
         # Tạo loại phòng
         room_types = [
-            RoomType(type="Deluxe", price_million=1.0),
-            RoomType(type="Standard", price_million=0.8),
-            RoomType(type="Family Suite", price_million=1.5),
-            RoomType(type="Presidential Suite", price_million=3.0),
+            RoomType(type="Deluxe", price_million=1000000),
+            RoomType(type="Standard", price_million=800000),
+            RoomType(type="Suite gia đình", price_million=1500000),
+            RoomType(type="Tổng thống", price_million=3000000),
         ]
+
         db.session.add_all(room_types)
         db.session.commit()
 
         # Tạo trạng thái phòng
         room_statuses = [
-            RoomStatus(status="Available"),
-            RoomStatus(status="Occupied"),
-            RoomStatus(status="Maintenance"),
-            RoomStatus(status="Reserved"),
+            RoomStatus(status="Có sẵn"),
+            RoomStatus(status="Bảo trì"),
+            RoomStatus(status="Đã đặt"),
         ]
         db.session.add_all(room_statuses)
         db.session.commit()
@@ -64,13 +66,11 @@ def seed_data():
 
         # Check UserRole after committing
         print(f"User Roles: {[role.type for role in user_roles]}")
-
-        # Tạo phương thức thanh toán
         payment_methods = [
-            PaymentMethod(type="Credit Card"),
-            PaymentMethod(type="Cash"),
-            PaymentMethod(type="Bank Transfer"),
-            PaymentMethod(type="E-Wallet"),
+            PaymentMethod(type="Thẻ tín dụng"),
+            PaymentMethod(type="Tiền mặt"),
+            PaymentMethod(type="Chuyển khoản ngân hàng"),
+            PaymentMethod(type="Ví điện tử"),
         ]
         db.session.add_all(payment_methods)
         db.session.commit()
@@ -118,33 +118,148 @@ def seed_data():
         # Check if admin user is created
         print(f"Admin user created: {admin_user.username}")
 
-        # Tạo phòng
         rooms = [
-            Room(name="Room 101", room_type_id=room_types[0].id, room_status_id=room_statuses[0].id, price=200000),
-            Room(name="Room 102", room_type_id=room_types[1].id, room_status_id=room_statuses[1].id, price=300000),
-            Room(name="Room 201", room_type_id=room_types[2].id, room_status_id=room_statuses[0].id, price=400000),
-            Room(name="Room 202", room_type_id=room_types[3].id, room_status_id=room_statuses[0].id, price=500000),
+            Room(
+                name="Room 101",
+                room_type_id=room_types[0].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng sang trọng với tiện nghi hiện đại và tầm nhìn tuyệt đẹp."
+            ),
+            Room(
+                name="Room 102",
+                room_type_id=room_types[0].id,
+                room_status_id=room_statuses[1].id,
+                description="Phòng sang trọng với tiện nghi hiện đại và tầm nhìn tuyệt đẹp."
+            ),
+            Room(
+                name="Room 103",
+                room_type_id=room_types[0].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng sang trọng với tiện nghi hiện đại và tầm nhìn tuyệt đẹp."
+            ),
+            Room(
+                name="Room 104",
+                room_type_id=room_types[0].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng sang trọng với tiện nghi hiện đại và tầm nhìn tuyệt đẹp."
+            ),
+            Room(
+                name="Room 105",
+                room_type_id=room_types[0].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng sang trọng với tiện nghi hiện đại và tầm nhìn tuyệt đẹp."
+            ),
+            Room(
+                name="Room 201",
+                room_type_id=room_types[1].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng thoải mái và tiết kiệm, phù hợp cho khách du lịch với ngân sách hạn chế."
+            ),
+            Room(
+                name="Room 202",
+                room_type_id=room_types[1].id,
+                room_status_id=room_statuses[1].id,
+                description="Phòng thoải mái và tiết kiệm, phù hợp cho khách du lịch với ngân sách hạn chế."
+            ),
+            Room(
+                name="Room 203",
+                room_type_id=room_types[1].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng thoải mái và tiết kiệm, phù hợp cho khách du lịch với ngân sách hạn chế."
+            ),
+            Room(
+                name="Room 204",
+                room_type_id=room_types[1].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng thoải mái và tiết kiệm, phù hợp cho khách du lịch với ngân sách hạn chế."
+            ),
+            Room(
+                name="Room 205",
+                room_type_id=room_types[1].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng thoải mái và tiết kiệm, phù hợp cho khách du lịch với ngân sách hạn chế."
+            ),
+            Room(
+                name="Room 301",
+                room_type_id=room_types[2].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng rộng rãi, lý tưởng cho các gia đình, với không gian thoải mái"
+            ),
+            Room(
+                name="Room 302",
+                room_type_id=room_types[2].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng rộng rãi, lý tưởng cho các gia đình, với không gian thoải mái"
+            ),
+            Room(
+                name="Room 303",
+                room_type_id=room_types[2].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng rộng rãi, lý tưởng cho các gia đình, với không gian thoải mái"
+            ),
+            Room(
+                name="Room 304",
+                room_type_id=room_types[2].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng rộng rãi, lý tưởng cho các gia đình, với không gian thoải mái"
+            ),
+            Room(
+                name="Room 305",
+                room_type_id=room_types[2].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng rộng rãi, lý tưởng cho các gia đình, với không gian thoải mái"
+            ),
+            Room(
+                name="Room 401",
+                room_type_id=room_types[3].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng tổng thống với thiết kế thanh lịch và tiện nghi cao cấp, dành cho khách VIP."
+            ),
+            Room(
+                name="Room 402",
+                room_type_id=room_types[3].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng tổng thống với thiết kế thanh lịch và tiện nghi cao cấp, dành cho khách VIP."
+            ),
+            Room(
+                name="Room 403",
+                room_type_id=room_types[3].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng tổng thống với thiết kế thanh lịch và tiện nghi cao cấp, dành cho khách VIP."
+            ),
+            Room(
+                name="Room 404",
+                room_type_id=room_types[3].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng tổng thống với thiết kế thanh lịch và tiện nghi cao cấp, dành cho khách VIP."
+            ),
+            Room(
+                name="Room 405",
+                room_type_id=room_types[3].id,
+                room_status_id=room_statuses[0].id,
+                description="Phòng tổng thống với thiết kế thanh lịch và tiện nghi cao cấp, dành cho khách VIP."
+            ),
         ]
         db.session.add_all(rooms)
         db.session.commit()
 
         # Tạo ảnh phòng
         room_images = {
-            "Room 101": [
+            "Deluxe": [
                 "https://res.cloudinary.com/dco0ptusf/image/upload/v1729844929/cld-sample-2.jpg"
             ],
-            "Room 102": [
+            "Standard": [
                 "https://res.cloudinary.com/dj4slrwsl/image/upload/v1733044164/PMC_3922re2-7a204d0f28cc4d2abacf951df89d19d5_nzuu38.jpg"
             ],
-            "Room 201": [
+            "Suite gia đình": [
                 "https://res.cloudinary.com/dj4slrwsl/image/upload/v1733044164/PMC_3922re2-7a204d0f28cc4d2abacf951df89d19d5_nzuu38.jpg"
             ],
-            "Room 202": [
+            "Tổng thống": [
                 "https://res.cloudinary.com/dj4slrwsl/image/upload/v1733044164/PMC_3922re2-7a204d0f28cc4d2abacf951df89d19d5_nzuu38.jpg"
             ]
         }
         for room in rooms:
-            urls = room_images.get(room.name, [])
+            urls = room_images.get(room.room_type.type, [])
             for url in urls:
                 image = Image(url=url, room_id=room.id)
                 db.session.add(image)

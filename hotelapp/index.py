@@ -4,14 +4,14 @@ from flask import Flask, render_template, request, redirect
 from flask_login import login_user, logout_user
 from flask_bcrypt import Bcrypt
 from sqlalchemy.exc import IntegrityError, PendingRollbackError
+from hotelapp import admin
 
 from hotelapp import app, dao, login, db, admin
 from hotelapp.decorators import loggedin
-from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client
+from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole
 
 # Khởi tạo Bcrypt
 bcrypt = Bcrypt(app)
-
 
 
 @app.route('/')
@@ -26,28 +26,46 @@ def index():
 def login_admin():
     username = request.form.get('username')
     password = request.form.get('password')
-    u = dao.auth_user(username=username, password=password)
 
-    if u:
-        login_user(user=u)
+    # Xác thực tài khoản admin
+    user = dao.auth_user(username=username, password=password)
+    if user:
+        user_role = dao.get_user_role(user)
+        if user_role and user_role.type == "Admin":
+            login_user(user)
+            return redirect('/admin')
 
-    return redirect('/admin')
+    # Xử lý lỗi khi không phải admin
+    return render_template('auth/login.html', err_msg="Không có quyền truy cập admin.")
 
 
 @loggedin
-@app.route('/login', methods=['get', 'post'])
+@app.route('/login', methods=['GET', 'POST'])
 def login_my_user():
     err_msg = ''
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
 
+        # Xác thực người dùng
         user = dao.auth_user(username=username, password=password)
         if user:
-            login_user(user)
+            user_role = dao.get_user_role(user)
 
-            next = request.args.get('next')
-            return redirect(next if next else '/')
+            if user_role and user_role.type == "Guest":
+                login_user(user)
+            elif user_role and user_role.type == "Admin":
+                login_user(user)
+                return redirect('/admin')
+            else:
+                err_msg = 'Người dùng không có vai trò hợp lệ!'
+                return render_template('auth/login.html', err_msg=err_msg)
+
+            # Điều hướng an toàn
+            next_url = request.args.get('next')
+            if not next_url or not next_url.startswith('/'):
+                next_url = '/'
+            return redirect(next_url)
         else:
             err_msg = 'Tên đăng nhập hoặc mật khẩu không đúng!'  # "Username or password is incorrect."
 
@@ -97,7 +115,6 @@ def register_user():
                             err_msg = "Số điện thoại đã được đăng ký!"  # "Phone number already registered!"
                         else:
 
-
                             # Tạo người dùng mới
                             dao.create_user(
                                 name,
@@ -135,10 +152,10 @@ def search_rooms():
     ticket_class = request.form.get('ticket_class')
     passengers = request.form.get('passengers')
 
-    available_status = RoomStatus.query.filter_by(status='Available').first()
+    available_status = RoomStatus.query.filter_by(status='Có sẵn').first()
     if not available_status:
         return render_template('rooms.html',
-                               error="Trạng thái 'Available' không tồn tại trong cơ sở dữ liệu.")  # "The 'Available' status does not exist in the database."
+                               error="Trạng thái 'Có sẵn' không tồn tại trong cơ sở dữ liệu.")  # "The 'Available' status does not exist in the database."
 
     rooms = Room.query.filter_by(room_type_id=ticket_class,
                                  room_status_id=available_status.id).all()
@@ -154,36 +171,49 @@ def rooms():
 @app.route('/booking/<int:room_id>', methods=['GET', 'POST'])
 def booking(room_id):
     room = Room.query.get_or_404(room_id)
-    clients = Client.query.all()  # Lấy tất cả khách hàng từ cơ sở dữ liệu
 
     if request.method == 'POST':
         try:
             # Lấy dữ liệu từ form
-            client_id = request.form['client_id']
+            full_name = request.form['full_name']
+            phone_number = request.form['phone_number']
+            email = request.form['email']
+            identification_code = request.form['identification_code']
             check_in_date = datetime.strptime(request.form['check_in_date'], '%Y-%m-%d')
             check_out_date = datetime.strptime(request.form['check_out_date'], '%Y-%m-%d')
 
             # Kiểm tra sự có sẵn của phòng
-            available_status = RoomStatus.query.filter_by(status='Available').first()
+            available_status = RoomStatus.query.filter_by(status='Có sẵn').first()
+            maintenance_status = RoomStatus.query.filter_by(status='Bảo trì').first()
             if not available_status:
-                raise ValueError(
-                    "Trạng thái phòng 'Available' không tồn tại trong cơ sở dữ liệu.")  # "The 'Available' status does not exist in the database."
-
+                raise ValueError("Trạng thái phòng 'Có sẵn' không tồn tại trong cơ sở dữ liệu.")
+            if room.room_status_id == maintenance_status.id:
+                return render_template('booking.html', room=room,
+                                       error="Phòng này đang được bảo trì!")
             if room.room_status_id != available_status.id:
-                return render_template('booking.html', room=room, clients=clients,
-                                       error="Phòng này đã được đặt trước!")  # "This room has already been booked!"
+                return render_template('booking.html', room=room,
+                                       error="Phòng này đã được đặt trước!")
 
-            # Kiểm tra client_id có hợp lệ không
-            client = Client.query.get(client_id)
+            # Kiểm tra thông tin khách hàng đã tồn tại chưa
+            client = Client.query.filter_by(identification_code=identification_code).first()
             if not client:
-                return render_template('booking.html', room=room, clients=clients,
-                                       error="Khách hàng không hợp lệ!")  # "Invalid customer!"
+                # Nếu chưa có, tạo mới khách hàng
+                client = Client(
+                    full_name=full_name,
+                    phone_number=phone_number,
+                    email=email,
+                    identification_code=identification_code,
+                    address="Chưa cung cấp",  # Hoặc lấy từ form nếu cần
+                    client_type_id=1  # Đặt mặc định là loại khách hàng "Regular"
+                )
+                db.session.add(client)
+                db.session.commit()
 
             # Tạo đơn đặt phòng
             booking_form = BookingForm(
                 check_in_date=check_in_date,
                 check_out_date=check_out_date,
-                client_id=client_id
+                client_id=client.id
             )
             db.session.add(booking_form)
             db.session.commit()
@@ -192,24 +222,23 @@ def booking(room_id):
             booking_detail = BookingRoomDetails(
                 booking_form_id=booking_form.id,
                 room_id=room.id,
-                total=room.price
+                total=room.room_type.price_million
             )
             db.session.add(booking_detail)
 
             # Cập nhật trạng thái phòng
-            room.room_status_id = RoomStatus.query.filter_by(status="Occupied").first().id
+            room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
             db.session.commit()
 
-            return render_template('booking.html', room=room, clients=clients,
-                                   success="Đặt phòng thành công!")  # "Room booked successfully!"
+            return render_template('booking.html', room=room,
+                                   success="Đặt phòng thành công!")
 
         except Exception as e:
             db.session.rollback()
-            return render_template('booking.html', room=room, clients=clients,
-                                   error=f"Lỗi: {str(e)}")  # "Error: {str(e)}"
+            return render_template('booking.html', room=room,
+                                   error=f"Lỗi: {str(e)}")
 
-    return render_template('booking.html', room=room, clients=clients)
-
+    return render_template('booking.html', room=room)
 
 if __name__ == "__main__":
     with app.app_context():

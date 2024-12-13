@@ -21,16 +21,40 @@ def get_room_types():
     return RoomType.query.all()
 
 
-def get_user_role(role):
-    return UserRole.query.filter(UserRole.type.__eq__(role)).first()
+def get_user_role(user):
+    # Đảm bảo user.role (hoặc field tương ứng) trả về chuỗi
+    role = user.user_role if isinstance(user.user_role, str) else str(user.user_role)
+    return UserRole.query.filter(UserRole.type == role).first()
+
 
 def create_user(name, username, password, identification_code, phone_number, email, address, client_type_id):
-    role = get_user_role('Guest')
-    password = str(hashlib.md5(password.strip().encode('utf-8')).hexdigest())
-    client = Client(full_name=name, identification_code=identification_code, address=address, phone_number=phone_number, email=email, client_type_id=client_type_id)
+    # Hash mật khẩu
+    hashed_password = hashlib.md5(password.strip().encode('utf-8')).hexdigest()
+
+    # Tạo đối tượng Client
+    client = Client(
+        full_name=name,
+        identification_code=identification_code,
+        address=address,
+        phone_number=phone_number,
+        email=email,
+        client_type_id=client_type_id
+    )
     db.session.add(client)
-    db.session.flush()
-    user = User(username=username, password=password, user_role_id=role.id, client_id=client.id)
+    db.session.flush()  # Đảm bảo `client.id` được tạo trước khi tiếp tục
+
+    # Lấy role "Guest" từ bảng UserRole
+    guest_role = UserRole.query.filter_by(type="Guest").first()
+    if not guest_role:
+        raise ValueError("Role 'Guest' không tồn tại trong bảng UserRole")
+
+    # Tạo đối tượng User
+    user = User(
+        username=username,
+        password=hashed_password,
+        user_role_id=guest_role.id,  # Sử dụng ID của role "Guest"
+        client_id=client.id
+    )
     db.session.add(user)
     db.session.commit()
 
