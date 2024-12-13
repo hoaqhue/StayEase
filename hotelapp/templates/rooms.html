@@ -36,8 +36,10 @@
                 <!-- Nội dung chi tiết -->
                 <div class="card-body">
                     <h5 class="card-title text-center">{{ room.name }}</h5>
+                    <p class="card-title text-center"><strong>Trạng Thái: </strong>{{ room.room_status.status }}</p>
+                    <p class="card-title text-center"><strong>Loại Phòng: </strong>{{ room.room_type.type }}</p>
                     <p class="card-text text-muted text-center">{{ room.description }}</p>
-                    <p class="card-text text-center"><strong>Giá:</strong> {{ room.price }} VND</p>
+                    <p class="card-text text-center"><strong>Giá:</strong> {{"{:,.0f}".format(room.room_type.price_million) }} VND</p>
                     <div class="d-grid">
                         <a href="{{ url_for('booking', room_id=room.id) }}" class="btn btn-primary">Đặt ngay</a>
                     </div>

@@ -9,13 +9,30 @@
     <form method="POST" action="{{ url_for('booking', room_id=room.id) }}" class="shadow p-4 bg-light rounded">
         <!-- Tên khách hàng -->
         <div class="mb-3">
-            <label for="client_id" class="form-label">Tên khách hàng:</label>
-            <select id="client_id" name="client_id" class="form-select" required>
-                <option value="" disabled selected>Chọn khách hàng</option>
-                {% for client in clients %}
-                    <option value="{{ client.id }}">{{ client.full_name }}</option>
-                {% endfor %}
-            </select>
+            <label for="full_name" class="form-label">Tên khách hàng:</label>
+            <input type="text" id="full_name" name="full_name" class="form-control" required
+                   placeholder="Nhập tên khách hàng">
+        </div>
+
+        <!-- Số điện thoại -->
+        <div class="mb-3">
+            <label for="phone_number" class="form-label">Số điện thoại:</label>
+            <input type="tel" id="phone_number" name="phone_number" class="form-control" required
+                   placeholder="Nhập số điện thoại" pattern="[0-9]{10}" title="Nhập 10 chữ số">
+        </div>
+
+        <!-- Email -->
+        <div class="mb-3">
+            <label for="email" class="form-label">Email:</label>
+            <input type="email" id="email" name="email" class="form-control" required
+                   placeholder="Nhập email">
+        </div>
+
+        <!-- CCCD -->
+        <div class="mb-3">
+            <label for="identification_code" class="form-label">CCCD:</label>
+            <input type="text" id="identification_code" name="identification_code" class="form-control" required
+                   placeholder="Nhập CCCD" pattern="[0-9]{12}" title="Nhập 12 chữ số">
         </div>
 
         <!-- Ngày nhận phòng -->
@@ -55,7 +72,5 @@
         </div>
     {% endif %}
 </div>
-
-
 
 {% endblock %}

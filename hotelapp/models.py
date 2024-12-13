@@ -45,7 +45,6 @@ class User(db.Model, UserMixin):
     client_id = Column(Integer, ForeignKey('client.id'), nullable=True)
     user_role = relationship('UserRole', backref='user', lazy=False)
 
-
     def __str__(self):
         return self.username
 
@@ -91,7 +90,7 @@ class UserRole(db.Model):
 
 class PaymentMethod(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    type = Column(String(20), nullable=False)
+    type = Column(String(100), nullable=False)
 
     def __str__(self):
         return self.type
@@ -153,7 +152,6 @@ class Image(db.Model):
     room_id = Column(Integer, ForeignKey('room.id'), nullable=True)
     room = db.relationship('Room', back_populates='images')
 
-
     def __str__(self):
         return f"Image {self.id}"
 
@@ -169,12 +167,13 @@ class RoomStatus(db.Model):
 class Room(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(50), nullable=True, unique=True)
+    description=Column(String(5000), nullable=True)
     room_status_id = Column(Integer, ForeignKey('room_status.id'), nullable=True)
     room_type_id = Column(Integer, ForeignKey('room_type.id'), nullable=True)
-    price = Column(Integer, nullable=True)
     room_status = Relationship('RoomStatus', lazy=True, backref='room')
     room_type = Relationship('RoomType', lazy=True, backref='room')
     images = db.relationship('Image', back_populates='room')
+
     def __str__(self):
         return self.name
 

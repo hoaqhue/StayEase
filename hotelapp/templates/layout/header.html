@@ -5,34 +5,33 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="collapsibleNavbar">
-
             <ul class="navbar-nav me-auto">
                 <a class="nav-link active" href="/">Trang chủ</a>
-                {% for c in categories%}
+                {% for c in categories %}
                 <li class="nav-item">
                     <a class="nav-link" href="?category_id={{c.id}}">{{c.name}}</a>
                 </li>
-                {%endfor%}
-                {%if current_user.is_authenticated%}
+                {% endfor %}
+                <li class="nav-item">
+                    <a class="nav-link text-info" href="/rooms">Danh sách phòng</a>
+                </li>
+            </ul>
+
+            <!-- Đăng nhập và Đăng xuất -->
+            <ul class="navbar-nav ms-auto">
+                {% if current_user.is_authenticated %}
                 <li class="nav-item">
                     <a class="nav-link text-info" href="/logout">&#128110; Đăng xuất</a>
                 </li>
-                {%else%}
+                {% else %}
                 <li class="nav-item">
                     <a class="nav-link text-info" href="/login">&#128110; Đăng nhập</a>
                 </li>
                 <li class="nav-item">
-                    <a  class="nav-link text-info" href="/rooms">Danh sách phòng</a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link text-info" href="/register">&#128110; Đăng ký</a>
                 </li>
-                {%endif%}
+                {% endif %}
             </ul>
-            <!--            <form class="d-flex">-->
-            <!--                <input class="form-control me-2" name="q" type="text" placeholder="Nhập từ khóa...">-->
-            <!--                <button class="btn btn-primary" type="submit">Tìm</button>-->
-            <!--            </form>-->
         </div>
     </div>
 </nav>
