@@ -202,9 +202,9 @@ def booking(room_id):
                     full_name=full_name,
                     phone_number=phone_number,
                     email=email,
+                    address="Chưa nhập",
                     identification_code=identification_code,
-                    address="Chưa cung cấp",  # Hoặc lấy từ form nếu cần
-                    client_type_id=1  # Đặt mặc định là loại khách hàng "Regular"
+
                 )
                 db.session.add(client)
                 db.session.commit()
