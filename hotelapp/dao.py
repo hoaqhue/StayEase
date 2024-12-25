@@ -94,10 +94,32 @@ def update_room_status(checkin):
 def get_client_by_email(email):
     return Client.query.filter_by(email=email).first()
 
+
+
+def get_forms():
+    return BookingForm.query.filter_by(is_checked_in = False).all()
+
+def create_invoice(form_id, payment_method, trans_id):
+    print("form id: ", form_id)
+    total = 0
+    for form_details in BookingRoomDetails.query.filter_by(booking_form_id=form_id).all():
+        total += form_details.total
+    invoice = Invoice(
+        booking_form_id=form_id,
+        payment_method_id=payment_method,
+        transaction_id=trans_id,
+        total=total
+    )
+    print(trans_id, total)
+    db.session.add(invoice)
+    db.session.commit()
+    return invoice
+  
 if __name__ == "__main__":
     with app.app_context():
         print(auth_user("admin", "123456"))
         print("Database loaded successfully!")
+
 
 
 

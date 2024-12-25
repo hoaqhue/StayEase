@@ -1,16 +1,26 @@
+from datetime import datetime
+
 from flask_login import UserMixin
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, Date
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, Date, Enum, DateTime
 from sqlalchemy.orm import relationship, Relationship, backref
 from hotelapp import app, db
+from enum import Enum as enum
+
+
+class Status(enum):
+    PENDING=0
+    SUCCESS=1
+    FAILED=2
 
 
 class BookingForm(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     check_in_date = Column(Date, nullable=False)
     check_out_date = Column(Date, nullable=False)
+    is_checked_in = Column(Boolean, default=False)
+    receipted_by = Column(Integer, ForeignKey('user.id'))
     client_id = Column(Integer, ForeignKey('client.client_id'), nullable=False)
     booking_room_details=db.relationship('BookingRoomDetails', lazy=True, backref='booking_form' )
-
 
     def __str__(self):
         return f"Booking Form {self.id}"
@@ -67,9 +77,11 @@ class Regulation(db.Model):
 class Invoice(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     total = Column(Float, default=0)
-    created_date = Column(Date, nullable=False)
+    created_date = Column(Date, nullable=False, default=datetime.now)
     booking_form_id = Column(Integer, ForeignKey('booking_form.id'), nullable=True)
     payment_method_id = Column(Integer, ForeignKey('payment_method.id'), nullable=True)
+    transaction_id = Column(String(50), nullable=False)
+    status = Column(Enum(Status), nullable=False, default=Status.PENDING)
 
     def __str__(self):
         return f"Invoice {self.id}"

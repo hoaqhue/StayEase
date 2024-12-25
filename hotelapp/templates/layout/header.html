@@ -6,17 +6,17 @@
         </button>
         <div class="collapse navbar-collapse" id="collapsibleNavbar">
             <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link active" href="/">Trang chủ</a>
-                </li>
-                {% for c in categories %}
-                <li class="nav-item">
-                    <a class="nav-link" href="?category_id={{c.id}}">{{c.name}}</a>
-                </li>
-                {% endfor %}
-                <li class="nav-item">
-                    <a class="nav-link" href="/rooms">Danh sách phòng</a>
-                </li>
+                <a class="nav-link active" href="/">Trang chủ</a>
+                {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link text-info" href="/rooms">Danh sách phòng</a>
+                    </li>
+                    {% if current_user.user_role.type == "Receptionist" %}
+                        <li class="nav-item">
+                            <a class="nav-link text-info" href="/forms">Lập phiếu</a>
+                        </li>
+                    {% endif %}
+                {% endif %}
             </ul>
             <ul class="navbar-nav ms-auto">
                 {% if current_user.is_authenticated %}
