@@ -1,0 +1,38 @@
+/* Sửa carousel */
+.carousel-inner img {
+    border-radius: 10px;
+    transition: transform 0.5s ease, opacity 0.5s ease; /* Thêm hiệu ứng mờ và phóng to */
+}
+
+/* Phóng to hình ảnh khi hover */
+.carousel-inner img:hover {
+    transform: scale(1.05); /* Phóng to nhẹ khi hover */
+    opacity: 0.9; /* Làm mờ ảnh khi hover */
+}
+
+/* Cải thiện các nút trong carousel */
+.carousel-control-prev, .carousel-control-next {
+    background-color: rgba(0, 0, 0, 0.5); /* Nền cho các nút điều khiển carousel */
+    border-radius: 50%; /* Bo góc để tạo hình tròn cho các nút */
+    width: 60px; /* Điều chỉnh kích thước các nút */
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease, transform 0.3s ease; /* Thêm hiệu ứng chuyển màu và phóng to */
+}
+
+.carousel-control-prev:hover, .carousel-control-next:hover {
+    background-color: #17a2b8; /* Màu nền khi hover */
+    transform: scale(1.1); /* Tạo hiệu ứng phóng to nhẹ khi hover */
+}
+
+/* Cải thiện mũi tên bên trong nút carousel */
+.carousel-control-prev-icon, .carousel-control-next-icon {
+    filter: invert(1); /* Đổi màu mũi tên thành màu sáng */
+    transition: filter 0.3s ease; /* Thêm hiệu ứng đổi màu mũi tên */
+}
+
+.carousel-control-prev:hover .carousel-control-prev-icon, .carousel-control-next:hover .carousel-control-next-icon {
+    filter: invert(0.5); /* Đổi màu mũi tên khi hover */
+}

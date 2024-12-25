@@ -1,7 +1,7 @@
 from hotelapp import db, app
 from hotelapp.models import (
     RoomType, RoomStatus, ClientType, UserRole,
-    PaymentMethod, Room, Client, User, Image, Regulation, BookingForm, BookingRoomDetails
+    PaymentMethod, Room, Client, User, Image, Regulation, BookingForm, BookingRoomDetails, AdImage
 )
 import hashlib
 from datetime import datetime
@@ -22,13 +22,28 @@ def seed_data():
         db.session.query(RoomType).delete()
         db.session.query(ClientType).delete()
         db.session.query(Regulation).delete()
+        db.session.query(AdImage).delete()
+
+        # Thêm ảnh quảng cáo mẫu
+        ad_images = [
+            AdImage(url="https://www.lottehotel.com/content/dam/lotte-hotel/global/common/company/saigon-hotel.jpg",
+                    description="Image"),
+            AdImage(url="https://www.lottehotel.com/content/dam/lotte-hotel/lotte/hanoi/accommodation/standard/deluxeroom/180921-2-2000-roo-LTHA.jpg.thumb.768.768.jpg",
+                    description="Image"),
+            AdImage(url="https://galatravel.vn/pic/hotel/4096906_636830779542384416_HasThumb.jpg",
+                    description="Image"),
+            AdImage(url="https://macmedia.vn/media/12247/180712-2-2000-con-hanoi-hoteljpgthumb19201920.jpg",
+                    description="Image")
+        ]
+        db.session.add_all(ad_images)
+        db.session.commit()
 
         # Tạo loại phòng
         room_types = [
-            RoomType(type="Deluxe", price_million=1000000),
-            RoomType(type="Standard", price_million=800000),
-            RoomType(type="Suite gia đình", price_million=1500000),
-            RoomType(type="Tổng thống", price_million=3000000),
+            RoomType(type="Deluxe", price_million=1000000),  # Deluxe Room
+            RoomType(type="Standard", price_million=800000),  # Standard Room
+            RoomType(type="Suite Family", price_million=1500000),  # Family Suite
+            RoomType(type="Presidential", price_million=3000000),  # Presidential Suite
         ]
 
         db.session.add_all(room_types)
@@ -45,15 +60,14 @@ def seed_data():
 
         # Tạo loại khách hàng
         client_types = [
-            ClientType(type="Regular", coefficient=1.0),
-            ClientType(type="VIP", coefficient=1.5),
-            ClientType(type="Premium", coefficient=2.0),
+            ClientType(type="Nội Địa", coefficient=1.0),  # Khách nội địa
+            ClientType(type="Nước Ngoài", coefficient=1.2)  # Khách nước ngoài
         ]
+
         db.session.add_all(client_types)
         db.session.commit()
 
-        # Check ClientType after committing
-        print(f"Client Types: {[client_type.type for client_type in client_types]}")
+
 
         # Tạo vai trò người dùng
         user_roles = [
@@ -64,8 +78,7 @@ def seed_data():
         db.session.add_all(user_roles)
         db.session.commit()
 
-        # Check UserRole after committing
-        print(f"User Roles: {[role.type for role in user_roles]}")
+
         payment_methods = [
             PaymentMethod(type="Thẻ tín dụng"),
             PaymentMethod(type="Tiền mặt"),
@@ -99,7 +112,7 @@ def seed_data():
                 address="Da Nang, Vietnam",
                 phone_number="0912345678",
                 email="lethic@example.com",
-                client_type_id=client_types[2].id
+                client_type_id=client_types[0].id
             ),
         ]
         db.session.add_all(clients)
@@ -110,13 +123,11 @@ def seed_data():
             username="admin",
             password=hashlib.md5("123456".encode("utf-8")).hexdigest(),
             user_role_id=user_roles[0].id,
-            client_id=clients[0].id
+            client_id=clients[0].client_id
         )
         db.session.add(admin_user)
         db.session.commit()
 
-        # Check if admin user is created
-        print(f"Admin user created: {admin_user.username}")
 
         rooms = [
             Room(
@@ -251,10 +262,10 @@ def seed_data():
             "Standard": [
                 "https://res.cloudinary.com/dj4slrwsl/image/upload/v1733044164/PMC_3922re2-7a204d0f28cc4d2abacf951df89d19d5_nzuu38.jpg"
             ],
-            "Suite gia đình": [
+            "Suite Family": [
                 "https://res.cloudinary.com/dj4slrwsl/image/upload/v1733044164/PMC_3922re2-7a204d0f28cc4d2abacf951df89d19d5_nzuu38.jpg"
             ],
-            "Tổng thống": [
+            "Presidential": [
                 "https://res.cloudinary.com/dj4slrwsl/image/upload/v1733044164/PMC_3922re2-7a204d0f28cc4d2abacf951df89d19d5_nzuu38.jpg"
             ]
         }

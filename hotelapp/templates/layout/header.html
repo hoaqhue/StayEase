@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+<nav class="navbar navbar-expand-sm bg-dark navbar-dark fixed-header">
     <div class="container-fluid">
         <a class="navbar-brand" href="#">Stay-Ease</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
@@ -6,29 +6,29 @@
         </button>
         <div class="collapse navbar-collapse" id="collapsibleNavbar">
             <ul class="navbar-nav me-auto">
-                <a class="nav-link active" href="/">Trang chủ</a>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/">Trang chủ</a>
+                </li>
                 {% for c in categories %}
                 <li class="nav-item">
                     <a class="nav-link" href="?category_id={{c.id}}">{{c.name}}</a>
                 </li>
                 {% endfor %}
                 <li class="nav-item">
-                    <a class="nav-link text-info" href="/rooms">Danh sách phòng</a>
+                    <a class="nav-link" href="/rooms">Danh sách phòng</a>
                 </li>
             </ul>
-
-            <!-- Đăng nhập và Đăng xuất -->
             <ul class="navbar-nav ms-auto">
                 {% if current_user.is_authenticated %}
                 <li class="nav-item">
-                    <a class="nav-link text-info" href="/logout">&#128110; Đăng xuất</a>
+                    <a class="nav-link" href="/logout">&#128110; Đăng xuất</a>
                 </li>
                 {% else %}
                 <li class="nav-item">
-                    <a class="nav-link text-info" href="/login">&#128110; Đăng nhập</a>
+                    <a class="nav-link" href="/login">&#128110; Đăng nhập</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link text-info" href="/register">&#128110; Đăng ký</a>
+                    <a class="nav-link" href="/register">&#128110; Đăng ký</a>
                 </li>
                 {% endif %}
             </ul>

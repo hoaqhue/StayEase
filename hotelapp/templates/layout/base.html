@@ -8,9 +8,31 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
             crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='Css/style.css') }}">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap JS & Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='Css/ad_image.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='Css/alert.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='Css/body.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='Css/btn.css') }}">
+     <link rel="stylesheet" href="{{ url_for('static', filename='Css/card.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='Css/carousel.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='Css/fixed-search.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='Css/footer.css') }}">
+     <link rel="stylesheet" href="{{ url_for('static', filename='Css/form.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='Css/header.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='Css/room.css') }}">
+
+
 
     <script src="{{ url_for('static', filename='JavaScript/DateTime.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='JavaScript/toggleSearch.js') }}" defer></script>
+     <script src="{{ url_for('static', filename='JavaScript/load_info_user.js') }}" defer></script>
+
 
     <title>{%block title%}Trang chủ{%endblock%}</title>
 </head>

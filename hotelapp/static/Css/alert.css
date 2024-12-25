@@ -1,0 +1,17 @@
+
+/* Cải tiến các thẻ thông báo */
+.alert {
+    font-size: 1.2rem;
+    padding: 20px;
+    background-color: #ffefef; /* Màu nền nhẹ cho cảnh báo */
+    color: #721c24; /* Màu chữ cho cảnh báo */
+    border: 1px solid #f5c6cb; /* Viền cho cảnh báo */
+    border-radius: 10px; /* Bo góc cho cảnh báo */
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+/* Thêm hiệu ứng hover cho thẻ thông báo */
+.alert:hover {
+    background-color: #f8c6c6; /* Màu nền sáng hơn khi hover */
+    transform: scale(1.02); /* Phóng to nhẹ khi hover */
+}

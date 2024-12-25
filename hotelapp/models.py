@@ -1,6 +1,6 @@
 from flask_login import UserMixin
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, Date
-from sqlalchemy.orm import relationship, Relationship
+from sqlalchemy.orm import relationship, Relationship, backref
 from hotelapp import app, db
 
 
@@ -8,14 +8,15 @@ class BookingForm(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     check_in_date = Column(Date, nullable=False)
     check_out_date = Column(Date, nullable=False)
-    client_id = Column(Integer, ForeignKey('client.id'), nullable=False)
+    client_id = Column(Integer, ForeignKey('client.client_id'), nullable=False)
+    booking_room_details=db.relationship('BookingRoomDetails', lazy=True, backref='booking_form' )
 
     def __str__(self):
         return f"Booking Form {self.id}"
 
 
 class Client(db.Model):
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    client_id = Column(Integer, primary_key=True, autoincrement=True)
     full_name = Column(String(50), nullable=False)
     identification_code = Column(String(20), nullable=False, unique=True)
     address = Column(String(50), nullable=False)
@@ -42,7 +43,7 @@ class User(db.Model, UserMixin):
     username = Column(String(20), nullable=False, unique=True)
     password = Column(String(100), nullable=False)
     user_role_id = Column(Integer, ForeignKey('user_role.id'), nullable=False)
-    client_id = Column(Integer, ForeignKey('client.id'), nullable=True)
+    client_id = Column(Integer, ForeignKey('client.client_id'), nullable=True)
     user_role = relationship('UserRole', backref='user', lazy=False)
 
     def __str__(self):
@@ -73,7 +74,7 @@ class Invoice(db.Model):
 
 class ClientRoomDetails(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    client_id = Column(Integer, ForeignKey('client.id'), nullable=True)
+    client_id = Column(Integer, ForeignKey('client.client_id'), nullable=True)
     booking_details_id = Column(Integer, ForeignKey('booking_room_details.id'), nullable=True)
 
     def __str__(self):
@@ -101,6 +102,7 @@ class BookingRoomDetails(db.Model):
     total = Column(Float, default=0)
     booking_form_id = Column(Integer, ForeignKey('booking_form.id'), nullable=True)
     room_id = Column(Integer, ForeignKey('room.id'), nullable=True)
+    room=db.relationship('Room', lazy=True, backref='booking_form_details')
 
     def __str__(self):
         return f"Booking Room Details {self.id}"
@@ -168,8 +170,8 @@ class Room(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(50), nullable=True, unique=True)
     description=Column(String(5000), nullable=True)
-    room_status_id = Column(Integer, ForeignKey('room_status.id'), nullable=True)
     room_type_id = Column(Integer, ForeignKey('room_type.id'), nullable=True)
+    room_status_id = Column(Integer, ForeignKey('room_status.id'), nullable=True)
     room_status = Relationship('RoomStatus', lazy=True, backref='room')
     room_type = Relationship('RoomType', lazy=True, backref='room')
     images = db.relationship('Image', back_populates='room')
@@ -186,6 +188,13 @@ class RoomType(db.Model):
     def __str__(self):
         return self.type
 
+class AdImage(db.Model):
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    url = Column(String(200), nullable=False)
+    description = Column(String(200), nullable=True)
+
+    def __str__(self):
+        return f"AdImage {self.id}"
 
 if __name__ == "__main__":
     with app.app_context():

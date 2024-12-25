@@ -1,0 +1,51 @@
+/* Thiết kế footer */
+footer {
+    position: relative;
+    bottom: 0;
+    width: 100%;
+    background: linear-gradient(135deg, #82c9ff, #6ec1e4, #f0f8ff); /* Màu gradient bầu trời sáng */
+    padding: 30px 0; /* Thêm khoảng cách cho footer */
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1); /* Tạo bóng nhẹ cho footer */
+    text-align: center; /* Căn giữa nội dung */
+}
+
+/* Container trong footer */
+.footer-container {
+    max-width: 1200px; /* Độ rộng tối đa cho container */
+    margin: 0 auto; /* Căn giữa */
+    padding: 20px; /* Padding xung quanh nội dung */
+    background: rgba(0, 0, 0, 0.3); /* Màu nền trong suốt */
+    border-radius: 15px; /* Bo góc cho footer */
+}
+
+/* Màu sắc văn bản trong footer */
+footer h1 {
+    font-size: 2.5rem; /* Kích thước chữ lớn cho tiêu đề */
+    font-weight: bold;
+    color:#ffffff;
+    margin-bottom: 10px; /* Khoảng cách dưới tiêu đề */
+}
+
+footer p {
+    font-size: 1rem; /* Kích thước chữ vừa phải cho nội dung */
+    margin-top: 0; /* Đảm bảo không có margin phía trên */
+    color: #ffffff; /* Màu chữ trắng */
+}
+
+/* Thêm hiệu ứng hover khi di chuột vào footer */
+footer .footer-container:hover {
+    background: rgba(255, 255, 255, 0.1); /* Thêm hiệu ứng sáng khi hover */
+    transform: scale(1.05); /* Tạo hiệu ứng phóng to khi hover */
+    transition: all 0.3s ease-in-out; /* Thêm hiệu ứng chuyển động mượt mà */
+}
+
+/* Responsive cho footer */
+@media (max-width: 768px) {
+    footer h1 {
+        font-size: 2rem; /* Giảm kích thước chữ tiêu đề trên màn hình nhỏ */
+    }
+
+    footer p {
+        font-size: 0.9rem; /* Giảm kích thước chữ nhỏ hơn trên màn hình nhỏ */
+    }
+}

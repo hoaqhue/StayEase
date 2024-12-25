@@ -1,0 +1,35 @@
+
+
+/* Phần tìm kiếm cố định bên dưới header */
+.fixed-search {
+    position: fixed;
+    top: 80px; /* Đặt ngay dưới header */
+    left: 0;
+    right: 0; /* Đảm bảo phần tìm kiếm đầy ngang */
+    z-index: 1025; /* Đảm bảo nằm dưới header */
+    background-color: #ffffff; /* Nền trắng */
+    padding: 20px 0; /* Giảm khoảng cách trên/dưới */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); /* Hiệu ứng bóng đổ mờ */
+    border-bottom: 2px solid #f1f1f1; /* Tạo viền dưới */
+    border-radius: 20px; /* Bo góc cho thanh tìm kiếm */
+    transition: transform 0.3s ease, opacity 0.3s ease; /* Thêm hiệu ứng ẩn hiện */
+    opacity: 1; /* Đảm bảo thanh tìm kiếm luôn hiển thị khi chưa ẩn */
+}
+
+/* Ẩn thanh tìm kiếm */
+.fixed-search.hide {
+    transform: translateY(-100%); /* Di chuyển thanh tìm kiếm lên khỏi màn hình */
+    opacity: 0; /* Làm mờ thanh tìm kiếm */
+}
+
+/* Điều chỉnh form tìm kiếm */
+.fixed-search form {
+    max-width: 1200px; /* Độ rộng tối đa */
+    margin: 0 auto; /* Căn giữa */
+    padding: 15px 30px; /* Thêm padding để tạo không gian */
+    border-radius: 15px; /* Bo góc cho form */
+    background-color: #d1e7ff; /* Nền nhẹ nhàng */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* Tạo bóng nhẹ cho form */
+}
+
+

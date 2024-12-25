@@ -1,0 +1,32 @@
+/* Nút với hiệu ứng khi hover */
+.btn {
+    padding: 12px 25px; /* Kích thước nút */
+    font-size: 1rem; /* Kích thước chữ */
+    background-color: #17a2b8; /* Màu nền */
+    color: white; /* Màu chữ */
+    border: none;
+    border-radius: 50px; /* Bo góc mạnh hơn cho nút */
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Đổ bóng nhẹ cho nút */
+    transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease; /* Thêm hiệu ứng cho màu nền, bóng, và phóng to */
+}
+
+/* Khi hover, làm phóng to nút và thay đổi màu nền */
+.btn:hover {
+    background-color: #138496; /* Màu nền khi hover */
+    transform: scale(1.1); /* Phóng to nút khi hover */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2); /* Tăng độ bóng khi hover */
+    filter: brightness(1.2); /* Làm sáng nút khi hover */
+}
+
+/* Khi nút đang được nhấn */
+.btn:active {
+    transform: scale(1); /* Nút trở lại kích thước ban đầu khi nhấn */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Giảm độ bóng khi nhấn */
+}
+
+
+
+
+
+

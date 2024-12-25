@@ -1,0 +1,15 @@
+/* Tùy chỉnh các trường input và select */
+.form-control,
+.form-select {
+    border-radius: 6px; /* Bo góc cho input và select */
+    border: 1px solid #ddd; /* Viền nhẹ cho các trường */
+    padding: 12px 20px; /* Thêm padding cho input và select */
+    font-size: 1rem; /* Cải thiện font-size */
+    transition: border-color 0.3s ease; /* Thêm hiệu ứng khi thay đổi border */
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #17a2b8; /* Thay đổi màu viền khi focus */
+    box-shadow: 0 0 5px rgba(23, 162, 184, 0.5); /* Tạo bóng khi focus */
+}
