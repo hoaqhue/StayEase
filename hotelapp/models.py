@@ -35,7 +35,7 @@ class Client(db.Model):
     email = Column(String(50), nullable=False)
     client_type_id = Column(Integer, ForeignKey('client_type.id'), nullable=True)
     booking_forms = db.relationship("BookingForm", backref="client", cascade="all, delete-orphan")
-
+    client_type=db.relationship("ClientType", backref="client")
     def __str__(self):
         return self.full_name
 

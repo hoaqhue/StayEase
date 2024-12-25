@@ -69,6 +69,7 @@ def login_my_user():
                 login_user(user)
             elif user_role and user_role.type == "Admin":
                 login_user(user)
+                return redirect('/admin')
             else:
                 err_msg = 'Người dùng không có vai trò hợp lệ!'
                 return render_template('auth/login.html', err_msg=err_msg)
@@ -208,6 +209,7 @@ def rooms():
     checkin = request.args.get('check_in_date')
     checkout = request.args.get('check_out_date')
     room_type_id = request.args.get('ticket_class', type=int)
+
 
 
     # Truy vấn danh sách phòng

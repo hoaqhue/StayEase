@@ -27,8 +27,6 @@ class LogoutView(BaseView):
         return current_user.is_authenticated
 
 
-
-
 class RoomView(AuthenticatedView):
     column_list = ['id', 'name', 'room_status', 'room_type', 'images']
     column_searchable_list = ['name']
@@ -140,7 +138,50 @@ class RoomView(AuthenticatedView):
             flash(f'Error updating room: {e}', 'error')
             return False
 
-admin = Admin(app, name="Quản Lý Khách Sạn", template_mode="bootstrap4")
 
+# Other views
+class ClientView(AuthenticatedView):
+    column_list = ['client_id', 'full_name', 'identification_code', 'address', 'email', 'phone_number',
+                   'client_type.type']
+    column_searchable_list = ['full_name', 'email', 'phone_number', 'identification_code']
+    column_filters = ['client_type.type']
+    column_labels = {
+        'client_id': "ID",
+        'full_name': 'Tên Khách Hàng',
+        'identification_code': 'CCCD',
+        'address': 'Địa chỉ',
+        'email': 'Email',
+        'phone_number': 'Số Điện Thoại',
+        'client_type.type': 'Loại Khách Hàng'
+    }
+
+    def delete_model(self, model):
+        if current_user.is_authenticated and current_user.client_id == model.client_id:
+            flash("Không thể xóa khách hàng vì bạn đang là người dùng đang đăng nhập.", "error")
+            return False
+        try:
+            super().delete_model(model)
+        except Exception as e:
+            flash(f"Không thể xóa khách hàng: {str(e)}", "error")
+            return False
+        return True
+
+
+class RoomTypeView(AuthenticatedView):
+    column_list = ['id', 'type', 'price_million']
+    column_searchable_list = ['type']
+    column_filters = ['price_million']
+    column_labels = {
+        'id': "ID",
+        'type': 'Loại Phòng',
+        'price_million': 'Giá'
+    }
+
+
+# Admin setup
+admin = Admin(app, name="Quản Lý Khách Sạn", template_mode="bootstrap4")
 admin.add_view(RoomView(Room, db.session, name="Quản Lý Phòng"))
-admin.add_view(LogoutView("Đăng Xuất"))
+admin.add_view(ClientView(Client, db.session, name="Quản Lý Khách Hàng"))
+
+admin.add_view(RoomTypeView(RoomType, db.session, name="Quản Lý Loại Phòng"))
+admin.add_view(LogoutView(name="Đăng Xuất"))
