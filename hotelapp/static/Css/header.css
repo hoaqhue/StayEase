@@ -1,0 +1,34 @@
+/* Đảm bảo header luôn cố định */
+.fixed-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1030; /* Đảm bảo header luôn ở trên */
+    background: linear-gradient(135deg, #82c9ff, #6ec1e4, #f0f8ff); /* Màu gradient của bầu trời sáng */
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1); /* Tạo hiệu ứng bóng mờ cho header */
+    padding: 15px 0; /* Điều chỉnh padding */
+    transition: top 0.3s ease; /* Hiệu ứng chuyển động cho header khi cuộn */
+}
+
+/* Cải thiện màu sắc các mục trong header */
+.fixed-header .navbar-nav .nav-link {
+    color: #ffffff; /* Màu văn bản sáng */
+    padding: 12px 20px; /* Điều chỉnh padding của các link */
+    font-size: 1rem; /* Cải thiện kích thước chữ */
+    text-transform: uppercase; /* Viết hoa cho các link */
+    transition: color 0.3s ease, transform 0.3s ease; /* Thêm hiệu ứng chuyển màu và phóng to */
+}
+
+.fixed-header .navbar-nav .nav-link:hover {
+    color: #ffb74d; /* Màu sắc khi hover - vàng sáng */
+    transform: scale(1.1); /* Tạo hiệu ứng phóng to nhẹ khi hover */
+}
+
+/* Logo */
+.fixed-header .navbar-brand {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #ffffff;
+    letter-spacing: 1px; /* Tăng khoảng cách chữ để tên đẹp hơn */
+}

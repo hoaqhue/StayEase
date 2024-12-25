@@ -4,35 +4,57 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h1 class="text-center mb-4">Đặt phòng khách sạn</h1>
+    <h1 class="text-center mb-4 text-primary">Đặt phòng khách sạn</h1>
 
     <form method="POST" action="{{ url_for('booking', room_id=room.id) }}" class="shadow p-4 bg-light rounded">
         <!-- Tên khách hàng -->
         <div class="mb-3">
             <label for="full_name" class="form-label">Tên khách hàng:</label>
             <input type="text" id="full_name" name="full_name" class="form-control" required
-                   placeholder="Nhập tên khách hàng">
+                   placeholder="Nhập tên khách hàng" value="{{ client.full_name if client else '' }}">
         </div>
 
         <!-- Số điện thoại -->
         <div class="mb-3">
             <label for="phone_number" class="form-label">Số điện thoại:</label>
             <input type="tel" id="phone_number" name="phone_number" class="form-control" required
-                   placeholder="Nhập số điện thoại" pattern="[0-9]{10}" title="Nhập 10 chữ số">
+                   placeholder="Nhập số điện thoại" pattern="[0-9]{10}" title="Nhập 10 chữ số"
+                   value="{{ client.phone_number if client else '' }}">
         </div>
 
         <!-- Email -->
         <div class="mb-3">
             <label for="email" class="form-label">Email:</label>
             <input type="email" id="email" name="email" class="form-control" required
-                   placeholder="Nhập email">
+                   placeholder="Nhập email" value="{{ client.email if client else '' }}">
         </div>
 
         <!-- CCCD -->
         <div class="mb-3">
             <label for="identification_code" class="form-label">CCCD:</label>
             <input type="text" id="identification_code" name="identification_code" class="form-control" required
-                   placeholder="Nhập CCCD" pattern="[0-9]{12}" title="Nhập 12 chữ số">
+                   placeholder="Nhập CCCD" pattern="[0-9]{12}" title="Nhập 12 chữ số"
+                   value="{{ client.identification_code if client else '' }}">
+        </div>
+
+        <!-- Loại khách -->
+        <div class="mb-3">
+            <label for="client_type_id" class="form-label">Loại khách:</label>
+            <select id="client_type_id" name="client_type_id" class="form-select" required>
+                <option value="" disabled selected>Chọn loại khách</option>
+                {% for client_type in client_types %}
+                    <option value="{{ client_type.id }}"
+                        {% if client and client.client_type_id == client_type.id %}selected{% endif %}>
+                        {{ client_type.type }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <!-- Số lượng khách -->
+        <div class="mb-3">
+            <label for="passengers" class="form-label">Số lượng khách:</label>
+            <input type="number" id="passengers" name="passengers" class="form-control" required
+                   placeholder="Nhập số lượng khách" min="1" max="3" value="1">
         </div>
 
         <!-- Ngày nhận phòng -->
@@ -49,6 +71,8 @@
             <input type="date" id="check_out_date" name="check_out_date" class="form-control"
                    required min="{{ today }}" max="{{ max_check_out | default('') }}" value="{{ today }}">
         </div>
+
+
 
         <!-- Nút gửi form -->
         <div class="d-grid">
@@ -72,5 +96,4 @@
         </div>
     {% endif %}
 </div>
-
 {% endblock %}

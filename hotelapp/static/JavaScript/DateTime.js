@@ -1,5 +1,4 @@
-
-   function updateCheckoutMinDate() {
+function updateCheckoutMinDate() {
     const checkinDate = document.getElementById('check_in_date');
     const checkoutDate = document.getElementById('check_out_date');
 
@@ -7,12 +6,17 @@
     const today = new Date();
     checkinDate.min = today.toISOString().split('T')[0];
 
+    // Tính ngày tối đa cho check-in là 28 ngày từ hôm nay
+    const maxCheckinDate = new Date();
+    maxCheckinDate.setDate(today.getDate() + 28); // Tính ngày tối đa là 28 ngày sau hôm nay
+    checkinDate.max = maxCheckinDate.toISOString().split('T')[0];
+
     if (checkinDate.value) {
         // Lấy ngày check-in từ input
         const minCheckoutDate = new Date(checkinDate.value);
 
         // Tăng ngày checkout tối thiểu lên 1 ngày
-        minCheckoutDate.setDate(minCheckoutDate.getDate());
+        minCheckoutDate.setDate(minCheckoutDate.getDate()+1);
 
         // Cập nhật giá trị tối thiểu cho ngày checkout
         checkoutDate.min = minCheckoutDate.toISOString().split('T')[0];
@@ -26,4 +30,3 @@
         checkoutDate.min = '';
     }
 }
-

@@ -1,6 +1,7 @@
 import hashlib
+from datetime import datetime
 
-from flask import Flask
+from flask import Flask, session, jsonify
 from hotelapp import app
 from hotelapp.models import *
 
@@ -15,6 +16,8 @@ def auth_user(username, password):
 
 def get_user_by_id(id):
     return User.query.get(id)
+
+
 
 
 def get_room_types():
@@ -53,7 +56,7 @@ def create_user(name, username, password, identification_code, phone_number, ema
         username=username,
         password=hashed_password,
         user_role_id=guest_role.id,  # Sử dụng ID của role "Guest"
-        client_id=client.id
+        client_id=client.client_id
     )
     db.session.add(user)
     db.session.commit()
@@ -61,25 +64,36 @@ def create_user(name, username, password, identification_code, phone_number, ema
 
 def get_client_types():
     return ClientType.query.all()
-
-
-if __name__ == "__main__":
-    with app.app_context():
-        print(auth_user("admin", "123456"))
-        print("Database loaded successfully!")
-
-
-# Ví dụ về hàm kiểm tra số điện thoại đã tồn tại
 def get_client_by_phone(phone_number):
     return Client.query.filter_by(phone_number=phone_number).first()
+def get_client_by_id(client_id):
+    return Client.query.filter_by(client_id=client_id).first()
 
 
 def get_client_by_identification_code(identification_code):
     return Client.query.filter_by(identification_code=identification_code).first()
 
+def update_room_status(checkin):
+    # Lấy các booking đã hết hạn (ngày trả phòng nhỏ hơn ngày check-in)
+    expired_bookings = BookingForm.query.filter(BookingForm.check_out_date < checkin).all()
+
+    for booking in expired_bookings:
+        for booking_detail in booking.booking_room_details:
+            room = booking_detail.room
+            available_status = RoomStatus.query.filter_by(status="Có sẵn").first()
+
+            # Kiểm tra trạng thái phòng và cập nhật nếu cần
+            if available_status and room.room_status_id != available_status.id:
+                room.room_status_id = available_status.id
+
+    # Commit tất cả các thay đổi sau khi đã duyệt hết các booking
+    db.session.commit()
+    print(f"Đã cập nhật trạng thái của các phòng hết hạn thành 'Có sẵn'.")
+
 
 def get_client_by_email(email):
     return Client.query.filter_by(email=email).first()
+
 
 
 def get_forms():
@@ -100,3 +114,12 @@ def create_invoice(form_id, payment_method, trans_id):
     db.session.add(invoice)
     db.session.commit()
     return invoice
+  
+if __name__ == "__main__":
+    with app.app_context():
+        print(auth_user("admin", "123456"))
+        print("Database loaded successfully!")
+
+
+
+

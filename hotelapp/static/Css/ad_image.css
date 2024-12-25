@@ -1,0 +1,51 @@
+/* Quảng cáo carousel full màn hình */
+.container-fluid.p-0.mt-4 {
+    padding: 0;             /* Loại bỏ padding */
+    margin: 0;              /* Loại bỏ margin */
+    width: 81.1vw;           /* Chiếm toàn bộ chiều rộng màn hình */
+    height: 100vh;          /* Chiếm toàn bộ chiều cao màn hình */
+    position: relative;     /* Đảm bảo carousel được điều chỉnh đúng */
+    display: flex;          /* Dùng flexbox để căn giữa */
+    justify-content: center; /* Căn giữa theo chiều ngang */
+    align-items: center;    /* Căn giữa theo chiều dọc */
+}
+
+/* Đảm bảo mỗi item trong carousel chiếm toàn bộ chiều rộng và chiều cao của màn hình */
+#carouselExampleAutoplaying .carousel-item {
+    width: 100vw;           /* Chiếm toàn bộ chiều rộng màn hình */
+    height: 100vh;          /* Chiếm toàn bộ chiều cao màn hình */
+}
+
+/* Cải thiện hình ảnh trong carousel */
+#carouselExampleAutoplaying .carousel-item img {
+    object-fit: cover;      /* Đảm bảo hình ảnh được cắt hoặc mở rộng để đầy đủ trong không gian */
+    width: 100%;            /* Chiếm toàn bộ chiều rộng */
+    height: 100%;           /* Chiếm toàn bộ chiều cao */
+}
+
+/* Nút điều khiển carousel (Trước và Sau) */
+.carousel-control-prev,
+.carousel-control-next {
+    top: 50%;               /* Đặt nút ở giữa màn hình theo chiều dọc */
+    transform: translateY(-50%); /* Căn giữa nút */
+}
+
+/* Đảm bảo ảnh luôn cố định tỷ lệ */
+.carousel-img {
+    width: 100vw;            /* Chiều rộng toàn màn hình */
+    height: 100vh;           /* Chiều cao của ảnh bằng chiều cao của màn hình */
+    object-fit: cover;       /* Giữ tỉ lệ ảnh và cắt phần thừa nếu cần */
+}
+
+/* Loại bỏ khoảng cách mặc định của container */
+.container-fluid {
+    padding: 0;              /* Loại bỏ padding */
+}
+
+/* Tăng cường khả năng cuộn cho carousel-inner */
+.carousel-inner {
+    width: 100%;             /* Đảm bảo carousel chiếm toàn bộ chiều rộng */
+    max-width: 100%;         /* Đảm bảo không bị co lại */
+    overflow: hidden;        /* Ẩn phần thừa nếu có */
+}
+

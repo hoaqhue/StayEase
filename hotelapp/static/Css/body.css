@@ -1,0 +1,7 @@
+/* Điều chỉnh nội dung tránh bị che */
+body {
+    padding-top: 130px; /* Khoảng cách cho header và phần tìm kiếm */
+    font-family: 'Roboto', sans-serif; /* Đặt font chữ cho trang */
+    line-height: 1.6; /* Cải thiện độ cao dòng */
+    background-color: #f0f8ff; /* Màu nền nhẹ cho trang */
+}
