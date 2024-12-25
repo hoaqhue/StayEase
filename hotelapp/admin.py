@@ -21,7 +21,7 @@ class LogoutView(BaseView):
     @expose('/')
     def __index__(self):
         logout_user()
-        return redirect('/admin')
+        return redirect('/')
 
     def is_accessible(self):
         return current_user.is_authenticated

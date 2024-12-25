@@ -1,14 +1,22 @@
+import hashlib
+import hmac
+import json
+import os
+import random
+import uuid
 from datetime import datetime, timedelta
+from time import time
 
-from flask import Flask, render_template, request, redirect
-from flask_login import login_user, logout_user
+import requests
+from flask import Flask, render_template, request, redirect, make_response, flash, jsonify, url_for
+from flask_login import login_user, logout_user, current_user
 from flask_bcrypt import Bcrypt
 from sqlalchemy.exc import IntegrityError, PendingRollbackError
 from hotelapp import admin
 
 from hotelapp import app, dao, login, db, admin
 from hotelapp.decorators import loggedin
-from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole
+from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, Invoice
 
 # Khởi tạo Bcrypt
 bcrypt = Bcrypt(app)
@@ -52,7 +60,7 @@ def login_my_user():
         if user:
             user_role = dao.get_user_role(user)
 
-            if user_role and user_role.type == "Guest":
+            if user_role and user_role.type == "Guest" or user_role.type == "Receptionist":
                 login_user(user)
             elif user_role and user_role.type == "Admin":
                 login_user(user)
@@ -239,6 +247,210 @@ def booking(room_id):
                                    error=f"Lỗi: {str(e)}")
 
     return render_template('booking.html', room=room)
+
+
+@app.route("/forms")
+def forms():
+    forms = dao.get_forms()
+    return render_template("forms.html", forms=forms)
+
+
+@app.route('/checkin/<int:form_id>', methods=['GET', 'POST'])
+def checkin(form_id):
+    form = BookingForm.query.get_or_404(form_id)
+
+    if not current_user.is_authenticated:
+        flash("Bạn phải đăng nhập để thực hiện hành động này.", "danger")
+        return redirect("/login")
+
+    form.is_checked_in = True
+    form.receipted_by = current_user.id
+    db.session.commit()
+    flash(f'Check-in thành công cho phiếu số {form_id}!', 'success')
+    return redirect("/forms")
+
+@app.route('/test-thanh-toan-momo/<int:form_id>', methods=['GET', 'POST'])
+def pay(form_id):
+    form = BookingForm.query.get_or_404(form_id)
+
+    if not current_user.is_authenticated:
+        flash("Bạn phải đăng nhập để thực hiện hành động này.", "danger")
+        return redirect("/login")
+
+    trans_id = str(uuid.uuid4())
+    invoice = dao.create_invoice(form_id, 1, trans_id)
+
+    # Sử dụng url_for để tạo URL tuyệt đối cho API Momo-Pay
+    momo_api_url = url_for('momo_pay', _external=True)
+
+    try:
+        response = requests.post(momo_api_url, json={
+            "total": invoice.total,
+            "trans_id": trans_id
+        })
+        response.raise_for_status()  # Kiểm tra nếu có lỗi HTTP
+        # flash(f'Thanh toán thành công cho phiếu số {form_id}!', 'success')
+        return redirect(response.json().get("payUrl"))
+
+    except requests.exceptions.RequestException as e:
+        flash(f'Lỗi thanh toán: {e}', 'danger')
+
+    return redirect("/forms")
+
+
+
+@app.route('/api/momo-pay', methods=['POST'])
+def momo_pay():
+    print(app.config.get("SERVER_URL"), app.config.get("MOMO_CREATE_URL"))
+    endpoint = app.config.get("MOMO_CREATE_URL")
+    partnerCode = "MOMO"
+    accessKey = "F8BBA842ECF85"
+    secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz"
+    requestId = str(uuid.uuid4())
+    amount = str((request.json.get('total')))
+    print(amount)
+    orderId = str((request.json.get('trans_id')))
+    orderInfo = "pay with MoMo"
+    requestType = "captureWallet"
+    extraData = ""
+    redirectUrl = str(app.config.get("SERVER_URL"))
+    ipnUrl = (app.config.get("SERVER_URL") + "/api/momo-pay/ipn")
+    rawSignature = "accessKey=" + accessKey + "&amount=" + amount + "&extraData=" + extraData + "&ipnUrl=" + ipnUrl + "&orderId=" + orderId + "&orderInfo=" + orderInfo + "&partnerCode=" + partnerCode + "&redirectUrl=" + redirectUrl + "&requestId=" + requestId + "&requestType=" + requestType
+    h = hmac.new(bytes(secretKey, 'ascii'), bytes(rawSignature, 'ascii'), hashlib.sha256)
+    signature = h.hexdigest()
+    data = {
+        'partnerCode': partnerCode,
+        'partnerName': "Stay Ease",
+        'requestId': requestId,
+        'amount': amount,
+        'orderId': orderId,
+        'orderInfo': orderInfo,
+        'redirectUrl': redirectUrl,
+        'ipnUrl': ipnUrl,
+        'lang': "vi",
+        'extraData': extraData,
+        'requestType': requestType,
+        'signature': signature
+    }
+
+    data = json.dumps(data)
+    print(data)
+
+    clen = len(data)
+    response = requests.post(endpoint, data=data,
+                             headers={'Content-Type': 'application/json', 'Content-Length': str(clen)})
+    if response.status_code == 200:
+
+        response_data = response.json()
+
+        print(response.json())
+        return jsonify({'ok': '200',
+                        'payUrl': response_data.get('payUrl'),
+                        'orderId': response_data.get('orderId')
+                        })
+        # return redirect(response_data.get('payUrl'))
+
+    else:
+        print(response.json())
+        return jsonify({'error': 'Invalid request method'})
+
+
+@app.route('/api/momo-pay/ipn', methods=['POST'])
+def momo_ipn():
+    data = json.loads(request.get_data(as_text=True))
+    print(data)
+    result_code = data["resultCode"]
+    orderId = data['orderId']
+
+    if result_code != 0:
+        return jsonify({'error': "Thanh toán thất bại",
+                        'status': 400})
+
+    try:
+        print("Thanh toán thành công!", orderId)
+        # dao.update_invoices(orderId)
+        return jsonify({'status': 200})
+    except Exception as e:
+        return jsonify({'status': 500, 'error': str(e)})
+
+
+@app.route('/api/zalo-pay', methods=['POST'])
+def zalo_pay():
+    endpoint = app.config.get("ZALO_CREATE_URL")
+    appid = 2553
+    key1 = "PcY4iZIKFCIdgZvA6ueMcMHHUbRLYjPL"
+    appuser = "user123"
+    transID = random.randrange(1000000)
+    apptime = int(round(time() * 1000))  # miliseconds
+    app_trans_id = "{:%y%m%d}_{}".format(datetime.today(), transID)
+    print("t", app_trans_id)
+    embeddata = json.dumps({"redirecturl": str(app.config.get("SERVER_URL"))})
+    item = json.dumps([{}])
+    amount = str((request.json.get('total')))
+    callback_url = (app.config.get("SERVER_URL") + "/api/zalo-pay/callback")
+
+    # Tạo chuỗi dữ liệu theo định dạng yêu cầu
+    raw_data = "{}|{}|{}|{}|{}|{}|{}".format(appid, app_trans_id, appuser, amount, apptime, embeddata, item)
+
+    # Tính toán MAC bằng cách sử dụng HMAC
+    mac = hmac.new(key1.encode(), raw_data.encode(), hashlib.sha256).hexdigest()
+
+    # Dữ liệu gửi đi
+    data = {
+        "app_id": appid,
+        "app_user": appuser,
+        "app_time": apptime,
+        "amount": amount,
+        "app_trans_id": app_trans_id,
+        "embed_data": embeddata,
+        "item": item,
+        "description": "Lazada - Payment for the order #" + str(transID),
+        "bank_code": "zalopayapp",
+        "mac": mac,
+        "callback_url": callback_url
+    }
+
+    # Gửi yêu cầu tạo
+    response = requests.post(url=endpoint, data=data)
+
+    if response.status_code == 200:
+        response_data = response.json()
+        print(response_data)
+        return jsonify({'ok': '200', 'orderId': app_trans_id, 'payUrl': response_data.get('order_url')})
+    else:
+        return jsonify({'error': 'Invalid request method'}), 400
+
+
+@app.route('/api/zalo-pay/callback', methods=['POST'])
+def callback():
+    result = {}
+    key2 = 'kLtgPl8HHhfvMuDHPwKfgfsY4Ydm9eIz'
+    try:
+        cbdata = request.json
+        mac = hmac.new(key2.encode(), cbdata['data'].encode(), hashlib.sha256).hexdigest()
+
+        # kiểm tra callback hợp lệ (đến từ ZaloPay server)
+        if mac != cbdata['mac']:
+            # callback không hợp lệ
+            result['return_code'] = -1
+            result['return_message'] = 'mac not equal'
+        else:
+            # thanh toán thành công
+            # merchant cập nhật trạng thái cho đơn hàng
+            dataJson = json.loads(cbdata['data'])
+            print("update order's status = success where apptransid = " + dataJson['app_trans_id'])
+
+            result['return_code'] = 1
+            result['return_message'] = 'success'
+            dao.update_invoices(dataJson['app_trans_id'])
+    except Exception as e:
+        result['return_code'] = 0  # ZaloPay server sẽ callback lại (tối đa 3 lần)
+        result['return_message'] = str(e)
+
+    # thông báo kết quả cho ZaloPay server
+    print(result)
+    return jsonify(result)
+
 
 if __name__ == "__main__":
     with app.app_context():
