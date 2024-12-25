@@ -16,7 +16,7 @@ function updateCheckoutMinDate() {
         const minCheckoutDate = new Date(checkinDate.value);
 
         // Tăng ngày checkout tối thiểu lên 1 ngày
-        minCheckoutDate.setDate(minCheckoutDate.getDate());
+        minCheckoutDate.setDate(minCheckoutDate.getDate()+1);
 
         // Cập nhật giá trị tối thiểu cho ngày checkout
         checkoutDate.min = minCheckoutDate.toISOString().split('T')[0];
