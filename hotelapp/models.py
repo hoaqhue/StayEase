@@ -2,6 +2,8 @@ from datetime import datetime
 
 from flask_login import UserMixin
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, Date, Enum, DateTime
+from sqlalchemy.orm import relationship, Relationship
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, Date
 from sqlalchemy.orm import relationship, Relationship, backref
 from hotelapp import app, db
 from enum import Enum as enum

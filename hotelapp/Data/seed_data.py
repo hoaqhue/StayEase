@@ -125,7 +125,13 @@ def seed_data():
             user_role_id=user_roles[0].id,
             client_id=clients[0].client_id
         )
-        db.session.add(admin_user)
+        rec_user = User(
+            username="rec",
+            password=hashlib.md5("123456".encode("utf-8")).hexdigest(),
+            user_role_id=user_roles[1].id,
+            client_id=clients[0].client_id
+        )
+        db.session.add_all([admin_user, rec_user])
         db.session.commit()
 
 
