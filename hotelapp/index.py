@@ -165,32 +165,22 @@ def search_rooms():
     if room_type_id:
         query = query.filter(Room.room_type_id == room_type_id)
 
-    # # Lọc theo ngày nhận và ngày trả
-    # if checkin and checkout:
-    #     try:
-    #         checkin_date = datetime.strptime(checkin, '%Y-%m-%d')
-    #         checkout_date = datetime.strptime(checkout, '%Y-%m-%d')
-    #
-    #         # Tránh phòng bị trùng lịch
-    #         booking_subquery = (
-    #             db.session.query(BookingRoomDetails)
-    #             .join(BookingForm)
-    #
-    #             .filter(
-    #                 BookingForm.check_in_date < checkout_date,BookingRoomDetails.room_id!=0,
-    #                 BookingForm.check_out_date > checkin_date
-    #             )
-    #             .exists()
-    #         )
-    #
-    #
-    #         # Lọc phòng không bị trùng lịch
-    #         query = query.filter(~booking_subquery)
-    #
-    #
-    #     except ValueError:
-    #         return "Invalid date format", 400
-
+    if checkin and checkout:
+        try:
+            checkin_date = datetime.strptime(checkin, '%Y-%m-%d')
+            checkout_date = datetime.strptime(checkout, '%Y-%m-%d')
+            booking_subquery = (
+                db.session.query(BookingRoomDetails.room_id)
+                .join(BookingForm)
+                .filter(
+                    BookingForm.check_in_date < checkout_date,
+                    BookingForm.check_out_date > checkin_date
+                )
+            )
+            dao.update_room_status(checkin_date)
+            query = query.filter(~Room.id.in_(booking_subquery))
+        except ValueError:
+            return "Invalid date format", 400
     rooms = query.all()
 
     return render_template('rooms.html', rooms=rooms)
@@ -215,28 +205,22 @@ def rooms():
     if room_type_id:
         query = query.filter(Room.room_type_id == room_type_id)
 
-
-    # # Lọc theo ngày nhận và ngày trả
-    # if checkin and checkout:
-    #     try:
-    #         checkin_date = datetime.strptime(checkin, '%Y-%m-%d')
-    #         checkout_date = datetime.strptime(checkout, '%Y-%m-%d')
-    #         # Tránh phòng bị trùng lịch
-    #         booking_subquery = (
-    #             db.session.query(BookingRoomDetails)
-    #             .join(BookingForm)
-    #             .filter(
-    #                 BookingForm.check_in_date < checkout_date,BookingRoomDetails.room_id!=0,
-    #                 BookingForm.check_out_date > checkin_date
-    #             )
-    #             .exists()
-    #         )
-    #         dao.update_room_status(checkin_date)
-    #         query = query.filter(~booking_subquery)
-    #
-    #     except ValueError:
-    #         return "Invalid date format", 400
-
+    if checkin and checkout:
+        try:
+            checkin_date = datetime.strptime(checkin, '%Y-%m-%d')
+            checkout_date = datetime.strptime(checkout, '%Y-%m-%d')
+            booking_subquery = (
+                db.session.query(BookingRoomDetails.room_id)
+                .join(BookingForm)
+                .filter(
+                    BookingForm.check_in_date < checkout_date,
+                    BookingForm.check_out_date > checkin_date
+                )
+            )
+            dao.update_room_status(checkin_date)
+            query = query.filter(~Room.id.in_(booking_subquery))
+        except ValueError:
+            return "Invalid date format", 400
     # Lấy danh sách phòng sau khi áp dụng bộ lọc
     rooms = query.all()
 
@@ -281,33 +265,34 @@ def booking(room_id):
             checkin = request.form['check_in_date']
             checkout = request.form['check_out_date']
 
-            # if checkin and checkout:
-            #     try:
-            #         checkin_date = datetime.strptime(checkin, '%Y-%m-%d')  # Định dạng ngày tháng
-            #         checkout_date = datetime.strptime(checkout, '%Y-%m-%d')
-            #
-            #         # Tránh phòng bị trùng lịch
-            #         booking_subquery = (
-            #             db.session.query(BookingRoomDetails)
-            #             .join(BookingForm)
-            #             .filter(
-            #                 BookingForm.check_in_date < checkout_date,BookingRoomDetails.room_id!=0,
-            #                 BookingForm.check_out_date > checkin_date
-            #             )
-            #             .exists()
-            #         )
-            #
-            #         # Kiểm tra nếu phòng đã được đặt trong khoảng thời gian này
-            #         if db.session.query(booking_subquery).scalar():
-            #             return render_template('booking.html', room=room,
-            #                                    error="Phòng đã được đặt trong khoảng thời gian này!")
-            #
-            #         # Cập nhật trạng thái phòng hết hạn
-            #         dao.update_room_status(checkin_date)
-            #
-            #     except ValueError:
-            #         return render_template('booking.html', room=room, error="Định dạng ngày không hợp lệ!",
-            #                                client_types=client_types)
+            if checkin and checkout:
+                try:
+                    checkin_date = datetime.strptime(checkin, '%Y-%m-%d')  # Định dạng ngày tháng
+                    checkout_date = datetime.strptime(checkout, '%Y-%m-%d')
+
+                    # Tránh phòng bị trùng lịch
+                    booking_subquery = (
+                        db.session.query(BookingRoomDetails)
+                        .join(BookingForm)
+                        .filter(
+                            BookingRoomDetails.room_id == room_id,
+                            BookingForm.check_in_date < checkin_date,
+                            BookingForm.check_out_date > checkout_date
+                        )
+                        .exists()
+                    )
+                    dao.update_room_status(checkin_date)
+                    # Kiểm tra nếu phòng đã được đặt trong khoảng thời gian này
+                    if db.session.query(booking_subquery).scalar():
+                        return render_template('booking.html', room=room,
+                                               error="Phòng đã được đặt trong khoảng thời gian này!")
+
+                    # Cập nhật trạng thái phòng hết hạn
+                    dao.update_room_status(checkin_date)
+
+                except ValueError:
+                    return render_template('booking.html', room=room, error="Định dạng ngày không hợp lệ!",
+                                           client_types=client_types)
 
             # Kiểm tra sự có sẵn của phòng
             available_status = RoomStatus.query.filter_by(status='Có sẵn').first()
