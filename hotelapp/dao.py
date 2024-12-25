@@ -114,12 +114,11 @@ def create_invoice(form_id, payment_method, trans_id):
     db.session.add(invoice)
     db.session.commit()
     return invoice
-  
+
 if __name__ == "__main__":
     with app.app_context():
         print(auth_user("admin", "123456"))
         print("Database loaded successfully!")
-
 
 
 

@@ -22,6 +22,7 @@ class BookingForm(db.Model):
     client_id = Column(Integer, ForeignKey('client.client_id'), nullable=False)
     booking_room_details=db.relationship('BookingRoomDetails', lazy=True, backref='booking_form' )
 
+
     def __str__(self):
         return f"Booking Form {self.id}"
 

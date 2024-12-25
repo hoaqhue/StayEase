@@ -10,6 +10,9 @@ from time import time
 import requests
 from flask import Flask, render_template, request, redirect, make_response, flash, jsonify, url_for
 from flask_login import login_user, logout_user, current_user
+import requests
+from flask import Flask, render_template, request, redirect, make_response, flash, jsonify, url_for
+from flask_login import login_user, logout_user, current_user
 from flask_bcrypt import Bcrypt
 from sqlalchemy import Integer
 from sqlalchemy.exc import IntegrityError, PendingRollbackError
@@ -21,6 +24,7 @@ from hotelapp import app, dao, login, db, admin
 from hotelapp.decorators import loggedin
 from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, Invoice, RoomType, AdImage, \
     ClientType
+from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, Invoice
 
 # Khởi tạo Bcrypt
 bcrypt = Bcrypt(app)
