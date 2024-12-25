@@ -281,7 +281,7 @@ def booking(room_id):
                         )
                         .exists()
                     )
-                    dao.update_room_status(checkin_date)
+
                     # Kiểm tra nếu phòng đã được đặt trong khoảng thời gian này
                     if db.session.query(booking_subquery).scalar():
                         return render_template('booking.html', room=room,
