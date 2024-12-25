@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for
 from flask_login import login_user, logout_user, current_user
 from flask_bcrypt import Bcrypt
+from sqlalchemy import Integer
 from sqlalchemy.exc import IntegrityError, PendingRollbackError
 from sqlalchemy.testing.suite.test_reflection import users
 
@@ -10,7 +11,8 @@ from hotelapp import admin
 
 from hotelapp import app, dao, login, db, admin
 from hotelapp.decorators import loggedin
-from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, RoomType, AdImage
+from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, RoomType, AdImage, \
+    ClientType
 
 # Khởi tạo Bcrypt
 bcrypt = Bcrypt(app)
@@ -260,10 +262,28 @@ def booking(room_id):
             identification_code = request.form['identification_code']
             address = request.form.get('address')
             client_type_id = request.form.get('client_type_id')
+            passengers = request.form.get('passengers')
 
             # Lấy ngày nhận và ngày trả phòng từ form
             checkin = request.form['check_in_date']
             checkout = request.form['check_out_date']
+            # Kiểm tra các trường dữ liệu
+            if not full_name:
+                return render_template('booking.html', error="Vui lòng nhập tên khách hàng.")
+            if not phone_number or not phone_number.isdigit() or len(phone_number) != 10:
+                return render_template('booking.html', error="Số điện thoại không hợp lệ. Nhập 10 chữ số.")
+            if not email or '@' not in email:
+                return render_template('booking.html', error="Email không hợp lệ.")
+            if not identification_code or not identification_code.isdigit() or len(identification_code) != 12:
+                return render_template('booking.html', error="CCCD phải có đúng 12 chữ số.")
+            if not client_type_id:
+                return render_template('booking.html', error="Vui lòng chọn loại khách.")
+            if not passengers.isdigit() or int(passengers) < 1 or int(passengers) > 3:
+                return render_template('booking.html', error="Số lượng khách phải từ 1 đến 3.")
+            if not checkin or not checkout:
+                return render_template('booking.html', error="Vui lòng chọn ngày nhận và trả phòng.")
+            if checkin >= checkout:
+                return render_template('booking.html', error="Ngày trả phòng phải sau ngày nhận phòng.")
 
             if checkin and checkout:
                 try:
@@ -323,16 +343,35 @@ def booking(room_id):
             booking_form = BookingForm(
                 check_in_date=checkin,
                 check_out_date=checkout,
-                client_id=client.client_id
+                client_id=client.client_id,
             )
             db.session.add(booking_form)
             db.session.commit()
 
-            # Thêm chi tiết đặt phòng
+            # Chuyển đổi giá phòng và số lượng hành khách
+            room_price = float(room.room_type.price_million)  # Giá phòng phải là số thực
+            passengers_count = int(passengers)  # Số lượng hành khách (kiểm tra chắc chắn có giá trị hợp lệ)
+            client_type_id = int(client_type_id)  # ID loại khách
+
+            # Kiểm tra hệ số của các loại khách
+            if len(client_types) < 2:
+                raise ValueError("Không đủ dữ liệu loại khách trong cơ sở dữ liệu.")
+
+
+            # Tính toán tổng giá trị dựa trên số lượng hành khách và loại khách
+            if passengers_count == 3:
+                total = room_price * (1 + client_types[0].coefficient)  # Tính giá với hệ số từ loại khách
+            elif client_type_id == 1:
+                total = room_price * (1 + client_types[1].coefficient)  # Nếu là loại khách đặc biệt, áp dụng hệ số
+            else:
+                total = room_price  # Giá mặc định
+
+            # Tạo đối tượng BookingRoomDetails
             booking_detail = BookingRoomDetails(
                 booking_form_id=booking_form.id,
                 room_id=room.id,
-                total=room.room_type.price_million
+                passengers=passengers_count,  # Số lượng hành khách đã chuyển thành int
+                total=total  # Gán giá trị tổng đã tính
             )
             db.session.add(booking_detail)
 
@@ -349,6 +388,7 @@ def booking(room_id):
                                    client=client)
 
     return render_template('booking.html', room=room, client_types=client_types, client=client)
+
 
 
 if __name__ == "__main__":

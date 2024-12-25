@@ -11,6 +11,7 @@ class BookingForm(db.Model):
     client_id = Column(Integer, ForeignKey('client.client_id'), nullable=False)
     booking_room_details=db.relationship('BookingRoomDetails', lazy=True, backref='booking_form' )
 
+
     def __str__(self):
         return f"Booking Form {self.id}"
 
@@ -35,7 +36,9 @@ class ClientType(db.Model):
     coefficient = Column(Float, default=0)
 
     def __str__(self):
-        return self.type
+        return f"{self.type}: {self.coefficient}"  # Combine type and coefficient in a readable format
+
+
 
 
 class User(db.Model, UserMixin):
@@ -103,6 +106,8 @@ class BookingRoomDetails(db.Model):
     booking_form_id = Column(Integer, ForeignKey('booking_form.id'), nullable=True)
     room_id = Column(Integer, ForeignKey('room.id'), nullable=True)
     room=db.relationship('Room', lazy=True, backref='booking_form_details')
+    passengers = Column(Integer, nullable=False, default=1)
+
 
     def __str__(self):
         return f"Booking Room Details {self.id}"

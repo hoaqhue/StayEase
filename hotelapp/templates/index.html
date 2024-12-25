@@ -5,7 +5,7 @@
 {% block content %}
 
 <!-- Thanh tìm kiếm cố định -->
-<div class="text-center shadow rounded fixed-search">
+<div class="text-center shadow rounded fixed-search" >
     <h1 class="text-primary">Tìm phòng</h1>
     <form method="post" action="/search_rooms" class="p-2" id="searchForm">
         <div class="row align-items-center">
@@ -13,7 +13,8 @@
                 <label>Ngày nhận phòng:</label>
             </div>
             <div class="col col-md-4 col-9 mb-2">
-                <input type="date" class="form-control" id="check_in_date" name="check_in_date" required max="{{ next_28_day }}" onchange="updateCheckoutMinDate()">
+                <input type="date" class="form-control" id="check_in_date" name="check_in_date" required
+                       max="{{ next_28_day }}" onchange="updateCheckoutMinDate()">
             </div>
             <div class="col col-md-2 col-3">
                 <label>Ngày trả phòng:</label>
@@ -53,14 +54,76 @@
             </div>
             {% endfor %}
         </div>
-        <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleAutoplaying" data-bs-slide="prev">
+        <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleAutoplaying"
+                data-bs-slide="prev">
             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
             <span class="visually-hidden">Previous</span>
         </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleAutoplaying" data-bs-slide="next">
+        <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleAutoplaying"
+                data-bs-slide="next">
             <span class="carousel-control-next-icon" aria-hidden="true"></span>
             <span class="visually-hidden">Next</span>
         </button>
     </div>
 </div>
+
+<div class="container-fluid p-0 mt-4">
+    <div style="width: 100%; height: 65vh; position: relative; background-color: #000; overflow: hidden; border-radius: 10px;">
+        <!-- Video (ẩn ban đầu) -->
+        <iframe id="video1" width="100%" height="100%" src="https://www.youtube.com/embed/Yo5heY2UiWU?si=lDY_-r-J4oYdC2S_"
+                title="YouTube video player" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin" allowfullscreen
+                style="position: absolute; top: 0; left: 0; z-index: 1; display: none; opacity: 0; transition: opacity 0.5s;"></iframe>
+
+        <!-- Ảnh phủ -->
+        <img src="static/Image/image.png" alt="Overlay Image" id="overlayImage1"
+             style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; cursor: pointer; z-index: 2; transition: opacity 0.5s;">
+
+        <!-- Nút bấm Play -->
+        <div id="playButton1" onclick="playVideo(1)"
+             style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(255, 255, 255, 0.8); color: #000; padding: 10px 20px; font-size: 18px; border-radius: 50%; cursor: pointer; z-index: 3; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); width: 60px; height: 60px; transition: transform 0.3s, box-shadow 0.3s;">
+            ▶
+        </div>
+    </div>
+
+    <!-- Hộp giới thiệu -->
+    <div class="text-center mt-2"
+         style="padding: 15px; background-color: #f8f9fa; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <h2 style="font-size: 24px; font-weight: bold; color: #333;">Trải nghiệm dịch vụ bữa tối hoàn hảo</h2>
+        <p style="font-size: 16px; color: #666;">Khám phá các gói dịch vụ ăn uống sang trọng với giá ưu đãi và dịch vụ tận tình. Chỉ vài cú nhấp chuột, kỳ nghỉ mơ ước sẽ trong tầm tay bạn.</p>
+    </div>
+</div>
+<div class="container-fluid p-0 mt-4">
+    <!-- Hộp giới thiệu -->
+    <div class="text-center mt-2"
+         style="padding: 15px; background-color: #f8f9fa; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <h2 style="font-size: 24px; font-weight: bold; color: #333;">Trải nghiệm dịch vụ lễ cưới hoàn hảo</h2>
+        <p style="font-size: 16px; color: #666;">Khám phá các gói dịch vụ tiệc cưới sang trọng với giá ưu đãi và dịch vụ tận tình. Chỉ vài cú nhấp chuột, kỷ niệm đầy mơ ước sẽ trong tầm tay bạn.</p>
+    </div>
+    <div style="width: 100%; height: 65vh; position: relative; background-color: #000; overflow: hidden; border-radius: 10px;">
+        <!-- Video (ẩn ban đầu) -->
+        <iframe id="video2" width="100%" height="100%" src="https://www.youtube.com/embed/zkHeWTr9xq8?si=NRdX7hYJbGdBAQ81"
+                title="YouTube video player" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin" allowfullscreen
+                style="position: absolute; top: 0; left: 0; z-index: 1; display: none; opacity: 0; transition: opacity 0.5s;"></iframe>
+
+        <!-- Ảnh phủ -->
+        <img src="static/Image/image1.jpg" alt="Overlay Image" id="overlayImage2"
+             style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; cursor: pointer; z-index: 2; transition: opacity 0.5s;">
+
+        <!-- Nút bấm Play -->
+        <div id="playButton2" onclick="playVideo(2)"
+             style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(255, 255, 255, 0.8); color: #000; padding: 10px 20px; font-size: 18px; border-radius: 50%; cursor: pointer; z-index: 3; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); width: 60px; height: 60px; transition: transform 0.3s, box-shadow 0.3s;">
+            ▶
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
 {% endblock %}

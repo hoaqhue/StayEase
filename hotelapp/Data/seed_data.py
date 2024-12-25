@@ -60,8 +60,8 @@ def seed_data():
 
         # Tạo loại khách hàng
         client_types = [
-            ClientType(type="Nội Địa", coefficient=1.0),  # Khách nội địa
-            ClientType(type="Nước Ngoài", coefficient=1.2)  # Khách nước ngoài
+            ClientType(type="Nội Địa", coefficient=0.25),  # Khách nội địa
+            ClientType(type="Nước Ngoài", coefficient=1.5)  # Khách nước ngoài
         ]
 
         db.session.add_all(client_types)
