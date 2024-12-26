@@ -317,10 +317,89 @@ class RoomUsageReportView(BaseView):
 
 
 
-admin = Admin(app, name="Quản Lý Khách Sạn", template_mode="bootstrap4")
-admin.add_view(RoomView(Room, db.session, name="Quản Lý Phòng"))
-admin.add_view(ClientView(Client, db.session, name="Quản Lý Khách Hàng"))
+class BookingRoomDetailsView(AuthenticatedView):
+    column_list = ['id', 'booking_form.client.full_name', 'total', 'booking_form.check_in_date',
+                   'booking_form.check_out_date', 'room.name', 'passengers']
+    column_searchable_list = ['booking_form.client.full_name', 'booking_form.check_in_date',
+                              'booking_form.check_out_date', 'room.name']
+    column_filters = ['booking_form.client.full_name', 'booking_form.check_in_date', 'booking_form.check_out_date',
+                      'room.name']
+    column_labels = {
+        'id': 'ID',
+        'booking_form.client.full_name': 'Tên Khách Hàng',
+        'total': 'Tổng cộng',
+        'booking_form.check_in_date': 'Ngày Check In',
+        'booking_form.check_out_date': 'Ngày Check Out',
+        'room.name': 'Tên Phòng',
+        'passengers': 'Số lượng hành khách',
+    }
 
+
+class ClientTypeView(AuthenticatedView):
+    column_list = ['id', 'type', 'coefficient']
+    column_searchable_list = ['type', 'coefficient']
+    column_filters = ['type', 'coefficient']
+    column_labels = {
+        'id': 'ID',
+        'type': 'Loại Khách Hàng',
+        'coefficient': 'Hệ Số'
+    }
+
+
+class AdImageView(AuthenticatedView):
+    column_list = ['id', 'url']
+    column_searchable_list = ['url']
+    column_filters = ['url']
+    column_labels = {
+        'id': 'ID',
+        'url': 'Ảnh quảng cáo',
+    }
+
+
+class UserView(AuthenticatedView):
+    column_list = ['id', 'username', 'password', 'user_role.type', 'client.full_name']
+    column_searchable_list = ['username', 'user_role.type', 'client.full_name']
+    column_filters = ['username', 'user_role.type', 'client.full_name']
+    column_labels = {
+        'id': 'ID',
+        'username': 'Username',
+        'password': 'Password',
+        'user_role.type': 'Vai trò',
+        'client.full_name': 'Tên người dùng'
+    }
+
+
+class InvoiceView(AuthenticatedView):
+    column_list = ['id', 'booking_form.client.full_name',  'payment_method.type', 'booking_form.booking_room_details.total','created_date', 'status']
+    column_searchable_list = [ 'booking_form.client.full_name',  'payment_method.type', 'created_date', 'status']
+    column_filters = ['booking_form.client.full_name',  'payment_method.type', 'created_date', 'status']
+    column_labels = {
+        'id': 'ID',
+        'booking_form.client.full_name': 'Tên người dùng',
+        'payment_method.type': 'Phương thức',
+        'booking_form.booking_room_details.total': 'Tổng tiền',
+        'status': "Trạng thái",
+        'created_date': 'Ngày tạo'
+    }
+
+
+# Admin setup
+admin = Admin(app, name="Quản Lý Khách Sạn", template_mode="bootstrap4")
+
+# Thêm các view với tên và endpoint rõ ràng
+admin.add_view(UserView(User, db.session, name="Tài Khoản", endpoint="user_view"))
+admin.add_view(RoomView(Room, db.session, name="Phòng", endpoint="room_view"))
+
+admin.add_view(RoomTypeView(RoomType, db.session, name="Loại Phòng", endpoint="room_type_view"))
+admin.add_view(ClientView(Client, db.session, name="Khách Hàng", endpoint="client_view"))
+admin.add_view(ClientTypeView(ClientType, db.session, name="Loại Khách Hàng", endpoint="client_type_view"))
+admin.add_view(
+    BookingRoomDetailsView(BookingRoomDetails, db.session, name="Đặt Phòng", endpoint="booking_room_details_view"))
+admin.add_view(InvoiceView(Invoice, db.session, name="Hóa đơn", endpoint="invoice_view"))
+admin.add_view(AdImageView(AdImage, db.session, name="Quảng cáo", endpoint="AdImage_view"))
+
+# Thêm view đăng xuất
+admin.add_view(LogoutView(name="Đăng Xuất", endpoint="logout"))
 admin.add_view(RevenueReportView(name="Báo Cáo Doanh Thu"))
 admin.add_view(RoomUsageReportView(name="Báo Cáo Mật Độ Sử Dụng Phòng"))
 

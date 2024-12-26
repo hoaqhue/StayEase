@@ -20,11 +20,25 @@ class BookingForm(db.Model):
     is_checked_in = Column(Boolean, default=False)
     receipted_by = Column(Integer, ForeignKey('user.id'))
     client_id = Column(Integer, ForeignKey('client.client_id'), nullable=False)
-    booking_room_details=db.relationship('BookingRoomDetails', lazy=True, backref='booking_form' )
+    booking_room_details = db.relationship('BookingRoomDetails',  back_populates='booking_form')
+    client = db.relationship('Client', back_populates='booking_form')
 
     def __str__(self):
         return f"Booking Form {self.id}"
 
+class BookingRoomDetails(db.Model):
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    total = Column(Float, default=0)
+    booking_form_id = Column(Integer, ForeignKey('booking_form.id'), nullable=True)
+    room_id = Column(Integer, ForeignKey('room.id'), nullable=True)
+    room=db.relationship('Room', lazy=True, backref='booking_form_details')
+    passengers = Column(Integer, nullable=False, default=1)
+    booking_form= db.relationship('BookingForm', back_populates='booking_room_details' )
+
+
+
+    def __str__(self):
+        return f"Booking Room Details {self.id}"
 
 class Client(db.Model):
     client_id = Column(Integer, primary_key=True, autoincrement=True)
@@ -34,7 +48,7 @@ class Client(db.Model):
     phone_number = Column(String(50), nullable=True, unique=True)
     email = Column(String(50), nullable=False)
     client_type_id = Column(Integer, ForeignKey('client_type.id'), nullable=True)
-    booking_forms = db.relationship("BookingForm", backref="client", cascade="all, delete-orphan")
+    booking_form = db.relationship("BookingForm", back_populates="client")
     client_type=db.relationship("ClientType", backref="client")
     def __str__(self):
         return self.full_name
@@ -58,112 +72,16 @@ class User(db.Model, UserMixin):
     user_role_id = Column(Integer, ForeignKey('user_role.id'), nullable=False)
     client_id = Column(Integer, ForeignKey('client.client_id'), nullable=True)
     user_role = relationship('UserRole', backref='user', lazy=False)
+    client = db.relationship("Client", backref='user')
 
     def __str__(self):
         return self.username
-
-
-class Regulation(db.Model):
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    key = Column(String(50), nullable=False)
-    value = Column(Float, nullable=False)
-    updated_by = Column(Integer, ForeignKey('user.id'), nullable=True)
-    updated_date = Column(Date)
-
-    def __str__(self):
-        return self.key
-
-
-class Invoice(db.Model):
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    total = Column(Float, default=0)
-    created_date = Column(Date, nullable=False, default=datetime.now)
-    booking_form_id = Column(Integer, ForeignKey('booking_form.id'), nullable=True)
-    payment_method_id = Column(Integer, ForeignKey('payment_method.id'), nullable=True)
-    transaction_id = Column(String(50), nullable=False)
-    status = Column(Enum(Status), nullable=False, default=Status.PENDING)
-
-    def __str__(self):
-        return f"Invoice {self.id}"
-
-
-class ClientRoomDetails(db.Model):
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    client_id = Column(Integer, ForeignKey('client.client_id'), nullable=True)
-    booking_details_id = Column(Integer, ForeignKey('booking_room_details.id'), nullable=True)
-
-    def __str__(self):
-        return f"Client Room Details {self.id}"
-
-
 class UserRole(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     type = Column(String(20), nullable=False)
 
     def __str__(self):
         return self.type
-
-
-class PaymentMethod(db.Model):
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    type = Column(String(100), nullable=False)
-
-    def __str__(self):
-        return self.type
-
-
-class BookingRoomDetails(db.Model):
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    total = Column(Float, default=0)
-    booking_form_id = Column(Integer, ForeignKey('booking_form.id'), nullable=True)
-    room_id = Column(Integer, ForeignKey('room.id'), nullable=True)
-    room=db.relationship('Room', lazy=True, backref='booking_form_details')
-    passengers = Column(Integer, nullable=False, default=1)
-
-
-    def __str__(self):
-        return f"Booking Room Details {self.id}"
-
-
-class RoomDetailsReport(db.Model):
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    date_count = Column(Integer, default=0)
-    rate = Column(Float, default=0)
-    report_id = Column(Integer, ForeignKey('usage_density_report.id'), nullable=True)
-    room_id = Column(Integer, ForeignKey('room.id'), nullable=True)
-
-    def __str__(self):
-        return f"Room Details Report {self.id}"
-
-
-class UsageDensityReport(db.Model):
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    month = Column(Date)
-
-    def __str__(self):
-        return f"Usage Density Report {self.id}"
-
-
-class MonthlyReport(db.Model):
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    month = Column(Date)
-
-    def __str__(self):
-        return f"Monthly Report {self.id}"
-
-
-class RoomTypeReport(db.Model):
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    revenue = Column(Float, default=0)
-    rate = Column(Float, default=0)
-    rent_count = Column(Integer, default=0)
-    report_id = Column(Integer, ForeignKey('monthly_report.id'), nullable=True)
-    room_type_id = Column(Integer, ForeignKey('room_type.id'), nullable=True)
-
-    def __str__(self):
-        return f"Room Type Report {self.id}"
-
-
 class Image(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     url = Column(String(200),
@@ -212,6 +130,88 @@ class AdImage(db.Model):
 
     def __str__(self):
         return f"AdImage {self.id}"
+
+
+class Regulation(db.Model):
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    key = Column(String(50), nullable=False)
+    value = Column(Float, nullable=False)
+    updated_by = Column(Integer, ForeignKey('user.id'), nullable=True)
+    updated_date = Column(Date)
+
+    def __str__(self):
+        return self.key
+
+
+class Invoice(db.Model):
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    total = Column(Float, default=0)
+    created_date = Column(Date, nullable=False, default=datetime.now)
+    booking_form_id = Column(Integer, ForeignKey('booking_form.id'), nullable=True)
+    booking_form=db.relationship('BookingForm', backref='invoice')
+    payment_method_id = Column(Integer, ForeignKey('payment_method.id'), nullable=True)
+    payment_method=db.relationship('PaymentMethod', backref='invoice')
+    transaction_id = Column(String(50), nullable=False)
+    status = Column(Enum(Status), nullable=False, default=Status.PENDING)
+
+    def __str__(self):
+        return f"Invoice {self.id}"
+
+
+class ClientRoomDetails(db.Model):
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    client_id = Column(Integer, ForeignKey('client.client_id'), nullable=True)
+    booking_details_id = Column(Integer, ForeignKey('booking_room_details.id'), nullable=True)
+
+    def __str__(self):
+        return f"Client Room Details {self.id}"
+
+class PaymentMethod(db.Model):
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    type = Column(String(100), nullable=False)
+
+    def __str__(self):
+        return self.type
+
+class RoomDetailsReport(db.Model):
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    date_count = Column(Integer, default=0)
+    rate = Column(Float, default=0)
+    report_id = Column(Integer, ForeignKey('usage_density_report.id'), nullable=True)
+    room_id = Column(Integer, ForeignKey('room.id'), nullable=True)
+
+    def __str__(self):
+        return f"Room Details Report {self.id}"
+
+
+class UsageDensityReport(db.Model):
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    month = Column(Date)
+
+    def __str__(self):
+        return f"Usage Density Report {self.id}"
+
+
+class MonthlyReport(db.Model):
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    month = Column(Date)
+
+    def __str__(self):
+        return f"Monthly Report {self.id}"
+
+
+class RoomTypeReport(db.Model):
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    revenue = Column(Float, default=0)
+    rate = Column(Float, default=0)
+    rent_count = Column(Integer, default=0)
+    report_id = Column(Integer, ForeignKey('monthly_report.id'), nullable=True)
+    room_type_id = Column(Integer, ForeignKey('room_type.id'), nullable=True)
+
+    def __str__(self):
+        return f"Room Type Report {self.id}"
+
+
 
 
 
