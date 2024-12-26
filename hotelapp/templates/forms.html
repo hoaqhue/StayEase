@@ -1,0 +1,31 @@
+{% extends 'layout/base.html' %}
+{% block title %}Danh sách người thuê{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4 text-primary">Danh sách phiếu thuê</h1>
+
+    <div class="row g-4"> <!-- G-4 tạo khoảng cách giữa các card -->
+        {% for form in forms %}
+        <div class="col-lg-4 col-md-6 col-sm-12">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header text-center">
+                    <h5 class="mb-0">Phiếu số: {{form.id}}</h5>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title text-primary">Khách hàng: {{form.client.full_name}}</h5>
+                    <p class="card-text"><strong>Số điện thoại:</strong> {{form.client.phone_number}}</p>
+                    <p class="card-text"><strong>Email:</strong> {{form.client.email}}</p>
+                    <p class="card-text"><strong>Ngày nhận phòng:</strong> {{form.check_in_date}}</p>
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('checkin', form_id=form.id) }}" class="btn btn-outline-primary w-100 me-2">Lập
+                            và xuất PDF</a>
+                        <a href="{{ url_for('pay', form_id=form.id) }}" class="btn btn-primary w-100">Xem chi tiết {{form.id}}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
