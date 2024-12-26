@@ -9,11 +9,11 @@
                 <a class="nav-link active" href="/">Trang chủ</a>
                 {% if current_user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link text-info" href="/rooms">Danh sách phòng</a>
+                        <a class="nav-link" href="/rooms">Danh sách phòng</a>
                     </li>
                     {% if current_user.user_role.type == "Receptionist" %}
                         <li class="nav-item">
-                            <a class="nav-link text-info" href="/forms">Lập phiếu</a>
+                            <a class="nav-link" href="/forms">Lập phiếu</a>
                         </li>
                     {% endif %}
                 {% endif %}
@@ -21,14 +21,14 @@
             <ul class="navbar-nav ms-auto">
                 {% if current_user.is_authenticated %}
                 <li class="nav-item">
-                    <a class="nav-link" href="/logout">&#128110; Đăng xuất</a>
+                    <a class="nav-link" href="/logout"> Đăng xuất</a>
                 </li>
                 {% else %}
                 <li class="nav-item">
-                    <a class="nav-link" href="/login">&#128110; Đăng nhập</a>
+                    <a class="nav-link" href="/login"> Đăng nhập</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/register">&#128110; Đăng ký</a>
+                    <a class="nav-link" href="/register"> Đăng ký</a>
                 </li>
                 {% endif %}
             </ul>

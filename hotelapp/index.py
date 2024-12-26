@@ -19,8 +19,8 @@ from hotelapp import admin
 
 from hotelapp import app, dao, login, db, admin
 from hotelapp.decorators import loggedin
-from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, Invoice, RoomType, AdImage, \
-    ClientType
+from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, Invoice, RoomType, \
+    AdImage
 
 # Khởi tạo Bcrypt
 bcrypt = Bcrypt(app)
@@ -209,8 +209,6 @@ def rooms():
     checkin = request.args.get('check_in_date')
     checkout = request.args.get('check_out_date')
     room_type_id = request.args.get('ticket_class', type=int)
-
-
 
     # Truy vấn danh sách phòng
     query = Room.query
@@ -605,6 +603,15 @@ def callback():
     # thông báo kết quả cho ZaloPay server
     print(result)
     return jsonify(result)
+
+# Định nghĩa filter 'currency'
+@app.template_filter('currency')
+def currency_filter(value):
+    """Chuyển giá trị thành định dạng tiền tệ."""
+    try:
+        return f"{value:,.0f} đ"  # Định dạng tiền tệ theo kiểu VND
+    except (ValueError, TypeError):
+        return value  # Nếu không phải kiểu số, trả lại giá trị gốc
 
 
 if __name__ == "__main__":
