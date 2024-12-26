@@ -20,8 +20,7 @@ from hotelapp import admin
 from hotelapp import app, dao, login, db, admin
 from hotelapp.decorators import loggedin
 from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, Invoice, RoomType, \
-    AdImage, \
-    ClientType, Booking
+    AdImage
 
 # Khởi tạo Bcrypt
 bcrypt = Bcrypt(app)
@@ -210,8 +209,6 @@ def rooms():
     checkin = request.args.get('check_in_date')
     checkout = request.args.get('check_out_date')
     room_type_id = request.args.get('ticket_class', type=int)
-
-
 
     # Truy vấn danh sách phòng
     query = Room.query
@@ -615,19 +612,6 @@ def currency_filter(value):
         return f"{value:,.0f} đ"  # Định dạng tiền tệ theo kiểu VND
     except (ValueError, TypeError):
         return value  # Nếu không phải kiểu số, trả lại giá trị gốc
-
-@app.route('/booking_details')
-def booking_details():
-    booking = Booking.query.first()  # Fetch a booking from the database
-    if booking:
-        return f"Total days for booking {booking.id}: {booking.total_days}"  # Display total_days
-    else:
-        return "No booking found."
-
-@app.route('/your_route')
-def your_view():
-    bookings = Booking.query.all()  # Example: Fetch all bookings
-    return render_template('your_template.html', bookings=bookings, enumerate=enumerate)
 
 
 if __name__ == "__main__":

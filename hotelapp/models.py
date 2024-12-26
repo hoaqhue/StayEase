@@ -58,6 +58,7 @@ class ClientType(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     type = Column(String(20), nullable=False)
     coefficient = Column(Float, default=0)
+    room_id = db.Column(db.Integer, db.ForeignKey('room.id'))
 
     def __str__(self):
         return f"{self.type}: {self.coefficient}"  # Combine type and coefficient in a readable format
@@ -119,6 +120,7 @@ class RoomType(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     type = Column(String(20), nullable=False)
     price_million = Column(Float, default=0)
+
 
     def __str__(self):
         return self.type
@@ -216,24 +218,21 @@ class RoomTypeReport(db.Model):
 
 
 
-class Booking(db.Model):
-    __tablename__ = 'booking'
+class RevenueReport(db.Model):
+    __tablename__ = 'revenue_reports'
 
     id = db.Column(db.Integer, primary_key=True)
-    room_id = db.Column(db.Integer, db.ForeignKey('room.id'))  # Giả sử bạn liên kết với bảng Room
-    total_price = db.Column(db.Float)
-    start_date = db.Column(db.Date)
-    end_date = db.Column(db.Date)
+    report_name = db.Column(db.String(100), nullable=False)
+    total_revenue = db.Column(db.Float, nullable=False)
+    report_date = db.Column(db.DateTime, nullable=False)
 
-    room = db.relationship('Room', backref='bookings')
+    def __init__(self, report_name, total_revenue, report_date):
+        self.report_name = report_name
+        self.total_revenue = total_revenue
+        self.report_date = report_date
 
-    @property
-    def total_days(self):
-        """Calculate the number of days between start_date and end_date"""
-        if self.start_date and self.end_date:
-            return (self.end_date - self.start_date).days
-        return 0  # Return 0 if no dates are provided
-
+    def __repr__(self):
+        return f'<RevenueReport {self.report_name}>'
 
 
 
