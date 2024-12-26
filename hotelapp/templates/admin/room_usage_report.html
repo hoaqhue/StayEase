@@ -1,0 +1,72 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<h2>Thống kê Mật độ Sử dụng Phòng Tháng {{ month }}</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>STT</th>
+            <th>Phòng</th>
+            <th>Số ngày thuê</th>
+            <th>Tỷ lệ</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in data %}
+            <tr>
+                <td>{{ loop.index }}</td>  <!-- Dùng loop.index để thay thế enumerate -->
+                <td>{{ row.room.name }}</td>  <!-- Giả sử 'room' có thuộc tính 'name' -->
+                <td>{{ row.rented_days }}</td>
+                <td>{{ row.rate | round(2) }}%</td>
+            </tr>
+        {% endfor %}
+        <tr>
+            <td colspan="3"><strong>Tổng số ngày thuê:</strong></td>
+            <td><strong>{{ total_rented_days }}</strong></td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- Canvas cho biểu đồ -->
+<canvas id="roomUsageChart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Lấy context của canvas
+    var ctx = document.getElementById('roomUsageChart').getContext('2d');
+
+    // Dữ liệu cho biểu đồ
+    var labels = [{% for row in data %}'{{ row.room.name }}',{% endfor %}];
+    var rentedDays = [{% for row in data %}{{ row.rented_days }},{% endfor %}];
+
+    // Tạo biểu đồ
+    var roomUsageChart = new Chart(ctx, {
+        type: 'pie',  // Chọn kiểu biểu đồ (pie chart)
+        data: {
+            labels: labels,  // Nhãn cho từng phòng
+            datasets: [{
+                label: 'Mật độ sử dụng phòng',
+                data: rentedDays,  // Dữ liệu số ngày thuê của mỗi phòng
+                backgroundColor: ['rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)', 'rgba(255, 206, 86, 0.2)', 'rgba(75, 192, 192, 0.2)'],  // Màu nền cho từng phần của biểu đồ
+                borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)', 'rgba(75, 192, 192, 1)'],  // Màu viền cho từng phần
+                borderWidth: 1  // Độ rộng của viền
+            }]
+        },
+        options: {
+            responsive: true,  // Biểu đồ sẽ thay đổi kích thước theo kích thước màn hình
+            plugins: {
+                legend: {
+                    position: 'top',  // Hiển thị chú thích ở vị trí trên cùng
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(tooltipItem) {
+                            return tooltipItem.label + ': ' + tooltipItem.raw + ' ngày';  // Hiển thị số ngày thuê khi hover vào phần biểu đồ
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

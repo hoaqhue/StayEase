@@ -1,0 +1,50 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<h2>Thống kê Doanh thu Tháng {{ month }}</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>STT</th>
+            <th>Loại Phòng</th>
+            <th>Doanh thu</th>
+            <th>Số lượt thuê</th>
+            <th>Tỷ lệ</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in data %}
+            <tr>
+                <td>{{ loop.index }}</td>  <!-- Dùng loop.index thay vì enumerate -->
+                <td>{{ row.type }}</td>
+                <td>{{ row.revenue | currency }}</td>
+                <td>{{ row.rented_count }}</td>
+                <td>{{ row.rate | round(2) }}%</td>
+            </tr>
+        {% endfor %}
+        <tr>
+            <td colspan="4"><strong>Tổng doanh thu:</strong></td>
+            <td><strong>{{ total_revenue | currency }}</strong></td>
+        </tr>
+    </tbody>
+</table>
+
+<canvas id="revenueChart"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    var ctx = document.getElementById('revenueChart').getContext('2d');
+    var revenueChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [{% for row in data %}'{{ row.type }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Doanh thu',
+                data: [{% for row in data %}{{ row.revenue }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        }
+    });
+</script>
+{% endblock %}

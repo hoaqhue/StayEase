@@ -213,6 +213,31 @@ class AdImage(db.Model):
     def __str__(self):
         return f"AdImage {self.id}"
 
+
+
+
+class Booking(db.Model):
+    __tablename__ = 'booking'
+
+    id = db.Column(db.Integer, primary_key=True)
+    room_id = db.Column(db.Integer, db.ForeignKey('room.id'))  # Giả sử bạn liên kết với bảng Room
+    total_price = db.Column(db.Float)
+    start_date = db.Column(db.Date)
+    end_date = db.Column(db.Date)
+
+    room = db.relationship('Room', backref='bookings')
+
+    @property
+    def total_days(self):
+        """Calculate the number of days between start_date and end_date"""
+        if self.start_date and self.end_date:
+            return (self.end_date - self.start_date).days
+        return 0  # Return 0 if no dates are provided
+
+
+
+
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()

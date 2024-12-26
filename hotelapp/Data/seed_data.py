@@ -1,7 +1,7 @@
 from hotelapp import db, app
 from hotelapp.models import (
     RoomType, RoomStatus, ClientType, UserRole,
-    PaymentMethod, Room, Client, User, Image, Regulation, BookingForm, BookingRoomDetails, AdImage
+    PaymentMethod, Room, Client, User, Image, Regulation, BookingForm, BookingRoomDetails, AdImage, Booking
 )
 import hashlib
 from datetime import datetime
