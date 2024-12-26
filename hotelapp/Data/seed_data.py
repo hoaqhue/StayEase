@@ -2,7 +2,7 @@ from hotelapp import db, app
 from hotelapp.models import (
     RoomType, RoomStatus, ClientType, UserRole,
     PaymentMethod, Room, Client, User, Image, Regulation, BookingForm, BookingRoomDetails, AdImage,
-    RevenueReport
+
 )
 import hashlib
 from datetime import datetime
@@ -294,19 +294,6 @@ def seed_data():
 
 
 
-## Đảm bảo rằng bạn đang sử dụng app context
-with app.app_context():
-    # Tạo một báo cáo doanh thu mới
-    new_report = RevenueReport(
-        report_name='Báo cáo doanh thu tháng 12',
-        total_revenue=5000000.0,  # Số tiền doanh thu
-        report_date=datetime(2024, 12, 31)
-    )
-
-    # Thêm báo cáo vào cơ sở dữ liệu
-    db.session.add(new_report)
-    db.session.commit()
-    print("Báo cáo doanh thu đã được thêm vào cơ sở dữ liệu.")
 
 if __name__ == "__main__":
     with app.app_context():

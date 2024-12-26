@@ -8,37 +8,37 @@ from enum import Enum as enum
 
 
 class Status(enum):
-    PENDING=0
-    SUCCESS=1
-    FAILED=2
+    PENDING = 0
+    SUCCESS = 1
+    FAILED = 2
 
 
 class BookingForm(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    check_in_date = Column(Date, nullable=False)
-    check_out_date = Column(Date, nullable=False)
+    check_in_date = Column(DateTime, nullable=False)
+    check_out_date = Column(DateTime, nullable=False)
     is_checked_in = Column(Boolean, default=False)
     receipted_by = Column(Integer, ForeignKey('user.id'))
     client_id = Column(Integer, ForeignKey('client.client_id'), nullable=False)
-    booking_room_details = db.relationship('BookingRoomDetails',  back_populates='booking_form')
+    booking_room_details = db.relationship('BookingRoomDetails', back_populates='booking_form')
     client = db.relationship('Client', back_populates='booking_form')
 
     def __str__(self):
         return f"Booking Form {self.id}"
+
 
 class BookingRoomDetails(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     total = Column(Float, default=0)
     booking_form_id = Column(Integer, ForeignKey('booking_form.id'), nullable=True)
     room_id = Column(Integer, ForeignKey('room.id'), nullable=True)
-    room=db.relationship('Room', lazy=True, backref='booking_form_details')
+    room = db.relationship('Room', lazy=True, backref='booking_form_details')
     passengers = Column(Integer, nullable=False, default=1)
-    booking_form= db.relationship('BookingForm', back_populates='booking_room_details' )
-
-
+    booking_form = db.relationship('BookingForm', back_populates='booking_room_details')
 
     def __str__(self):
         return f"Booking Room Details {self.id}"
+
 
 class Client(db.Model):
     client_id = Column(Integer, primary_key=True, autoincrement=True)
@@ -49,7 +49,8 @@ class Client(db.Model):
     email = Column(String(50), nullable=False)
     client_type_id = Column(Integer, ForeignKey('client_type.id'), nullable=True)
     booking_form = db.relationship("BookingForm", back_populates="client")
-    client_type=db.relationship("ClientType", backref="client")
+    client_type = db.relationship("ClientType", backref="client")
+
     def __str__(self):
         return self.full_name
 
@@ -64,8 +65,6 @@ class ClientType(db.Model):
         return f"{self.type}: {self.coefficient}"  # Combine type and coefficient in a readable format
 
 
-
-
 class User(db.Model, UserMixin):
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(20), nullable=False, unique=True)
@@ -77,12 +76,16 @@ class User(db.Model, UserMixin):
 
     def __str__(self):
         return self.username
+
+
 class UserRole(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     type = Column(String(20), nullable=False)
 
     def __str__(self):
         return self.type
+
+
 class Image(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     url = Column(String(200),
@@ -105,7 +108,7 @@ class RoomStatus(db.Model):
 class Room(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(50), nullable=True, unique=True)
-    description=Column(String(5000), nullable=True)
+    description = Column(String(5000), nullable=True)
     room_type_id = Column(Integer, ForeignKey('room_type.id'), nullable=True)
     room_status_id = Column(Integer, ForeignKey('room_status.id'), nullable=True)
     room_status = Relationship('RoomStatus', lazy=True, backref='room')
@@ -121,9 +124,9 @@ class RoomType(db.Model):
     type = Column(String(20), nullable=False)
     price_million = Column(Float, default=0)
 
-
     def __str__(self):
         return self.type
+
 
 class AdImage(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -150,9 +153,9 @@ class Invoice(db.Model):
     total = Column(Float, default=0)
     created_date = Column(Date, nullable=False, default=datetime.now)
     booking_form_id = Column(Integer, ForeignKey('booking_form.id'), nullable=True)
-    booking_form=db.relationship('BookingForm', backref='invoice')
+    booking_form = db.relationship('BookingForm', backref='invoice')
     payment_method_id = Column(Integer, ForeignKey('payment_method.id'), nullable=True)
-    payment_method=db.relationship('PaymentMethod', backref='invoice')
+    payment_method = db.relationship('PaymentMethod', backref='invoice')
     transaction_id = Column(String(50), nullable=False)
     status = Column(Enum(Status), nullable=False, default=Status.PENDING)
 
@@ -168,12 +171,14 @@ class ClientRoomDetails(db.Model):
     def __str__(self):
         return f"Client Room Details {self.id}"
 
+
 class PaymentMethod(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     type = Column(String(100), nullable=False)
 
     def __str__(self):
         return self.type
+
 
 class RoomDetailsReport(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -212,29 +217,6 @@ class RoomTypeReport(db.Model):
 
     def __str__(self):
         return f"Room Type Report {self.id}"
-
-
-
-
-
-
-class RevenueReport(db.Model):
-    __tablename__ = 'revenue_reports'
-
-    id = db.Column(db.Integer, primary_key=True)
-    report_name = db.Column(db.String(100), nullable=False)
-    total_revenue = db.Column(db.Float, nullable=False)
-    report_date = db.Column(db.DateTime, nullable=False)
-
-    def __init__(self, report_name, total_revenue, report_date):
-        self.report_name = report_name
-        self.total_revenue = total_revenue
-        self.report_date = report_date
-
-    def __repr__(self):
-        return f'<RevenueReport {self.report_name}>'
-
-
 
 
 if __name__ == "__main__":

@@ -16,13 +16,11 @@ from sqlalchemy import func
 from flask_login import current_user
 
 from flask import request, flash
-from datetime import datetime
 
 from flask import request, flash
 from datetime import datetime
 from sqlalchemy import func
 
-from hotelapp.index import checkin
 from hotelapp.models import *
 
 
@@ -191,17 +189,21 @@ class RoomTypeView(AuthenticatedView):
         'price_million': 'Giá'
     }
 
+
 class RevenueReportView(BaseView):
     def is_accessible(self):
+        # Kiểm tra quyền truy cập của người dùng
         return current_user.is_authenticated and current_user.user_role.type == "Admin"
 
     def calculate_next_month(self, year, month):
+        # Tính toán tháng tiếp theo
         if month == 12:
             return year + 1, 1
         return year, month + 1
 
     @expose('/')
     def index(self):
+        # Lấy tháng từ yêu cầu, mặc định là tháng hiện tại
         month = request.args.get('month', datetime.today().strftime('%Y-%m'), type=str)
 
         try:
@@ -212,30 +214,37 @@ class RevenueReportView(BaseView):
             flash("Định dạng tháng không hợp lệ. Sử dụng tháng hiện tại.", "error")
             year, month = map(int, datetime.today().strftime('%Y-%m').split('-'))
 
+        # Tính tháng tiếp theo
         next_month_year, next_month = self.calculate_next_month(year, month)
 
         # Truy vấn doanh thu theo loại phòng
-        revenue_query = db.session.query(
-            RoomType.type,
-            func.sum(BookingRoomDetails.total).label('revenue'),
-            func.count(BookingRoomDetails.id).label('rented_count')
-        ).select_from(RoomType).join(
-            BookingRoomDetails, BookingRoomDetails.room_id == RoomType.id
-        ).join(
-            BookingForm, BookingForm.id == BookingRoomDetails.booking_form_id
-        ).filter(
-            BookingForm.check_in_date >= datetime(year, month, 1),
-            BookingForm.check_out_date < datetime(next_month_year, next_month, 1)
-        ).group_by(RoomType.id).all()
+        try:
+            revenue_query = db.session.query(
+                RoomType.type,
+                func.sum(BookingRoomDetails.total).label('revenue'),
+                func.count(BookingRoomDetails.id).label('rented_count')
+            ).join(
+                BookingRoomDetails, BookingRoomDetails.room_id == RoomType.id
+            ).join(
+                BookingForm, BookingForm.id == BookingRoomDetails.booking_form_id
+            ).filter(
+                BookingForm.check_in_date >= datetime(year, month, 1),
+                BookingForm.check_out_date < datetime(next_month_year, next_month, 1)
+            ).group_by(RoomType.id).all()
 
-        # Xử lý kết quả truy vấn
-        total_revenue = sum(item.revenue or 0 for item in revenue_query)
-        data = [{
-            'type': item.type,
-            'revenue': item.revenue or 0,
-            'rented_count': item.rented_count or 0,
-            'rate': (item.revenue / total_revenue) * 100 if total_revenue else 0
-        } for item in revenue_query]
+            # Kiểm tra và xử lý kết quả truy vấn
+            total_revenue = sum(item.revenue or 0 for item in revenue_query)
+            data = [{
+                'type': item.type,
+                'revenue': item.revenue or 0,
+                'rented_count': item.rented_count or 0,
+                'rate': (item.revenue / total_revenue) * 100 if total_revenue else 0
+            } for item in revenue_query]
+
+        except Exception as e:
+            flash(f"Error: {str(e)}", "error")
+            data = []
+            total_revenue = 0
 
         return self.render(
             'admin/revenue_report.html',
@@ -247,10 +256,12 @@ class RevenueReportView(BaseView):
 
 class RoomUsageReportView(BaseView):
     def is_accessible(self):
+        # Kiểm tra quyền truy cập của người dùng
         return current_user.is_authenticated and current_user.user_role.type == "Admin"
 
     @expose('/')
     def index(self):
+        # Lấy tháng từ yêu cầu, mặc định là tháng hiện tại
         month = request.args.get('month', datetime.today().strftime('%Y-%m'), type=str)
 
         try:
@@ -261,27 +272,43 @@ class RoomUsageReportView(BaseView):
             flash("Định dạng tháng không hợp lệ. Sử dụng tháng hiện tại.", "error")
             year, month = map(int, datetime.today().strftime('%Y-%m').split('-'))
 
+        # Tính toán ngày bắt đầu và ngày kết thúc của tháng
         start_date = datetime(year, month, 1)
+
         next_month_date = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
 
-        # Truy vấn số ngày sử dụng của các phòng
-        room_usage_query = db.session.query(
-            Room.name,
-            func.sum(func.julianday(BookingForm.check_out_date) - func.julianday(BookingForm.check_in_date)).label(
-                'rented_days')
-        ).join(
-            BookingForm
-        ).filter(
-            BookingForm.check_in_date >= start_date,
-            BookingForm.check_out_date < next_month_date
-        ).group_by(Room.id).all()
+        try:
+            room_usage_query = db.session.query(
+                Room.name.label('room_name'),
+                func.sum(func.datediff(BookingForm.check_out_date, BookingForm.check_in_date)).label('rented_days')
+            ).join(
+                BookingRoomDetails, BookingRoomDetails.room_id == Room.id
+            ).join(
+                BookingForm, BookingForm.id == BookingRoomDetails.booking_form_id
+            ).filter(
+                start_date <= BookingForm.check_in_date,
+                BookingForm.check_out_date < next_month_date
 
-        total_rented_days = sum(item.rented_days or 0 for item in room_usage_query)
-        data = [{
-            'room': item.name,
-            'rented_days': item.rented_days or 0,
-            'rate': (item.rented_days / total_rented_days) * 100 if total_rented_days else 0
-        } for item in room_usage_query]
+            ).group_by(
+                Room.id
+            ).all()
+
+            # Kiểm tra và xử lý kết quả truy vấn
+            total_rented_days = sum(item.rented_days or 0 for item in room_usage_query)
+            data = [{
+                'room': item.room_name,
+                'rented_days': item.rented_days,
+                'rate': (item.rented_days / total_rented_days) * 100 if total_rented_days else 0
+            } for item in room_usage_query]
+
+
+        except Exception as e:
+            flash(f"Lỗi khi truy vấn dữ liệu: {str(e)}", "error")
+            data = []
+            total_rented_days = 0
+
+            # In lỗi ra màn hình
+            print(f"Lỗi khi truy vấn: {str(e)}")
 
         return self.render(
             'admin/room_usage_report.html',
@@ -372,9 +399,8 @@ admin.add_view(
     BookingRoomDetailsView(BookingRoomDetails, db.session, name="Đặt Phòng", endpoint="booking_room_details_view"))
 admin.add_view(InvoiceView(Invoice, db.session, name="Hóa đơn", endpoint="invoice_view"))
 admin.add_view(AdImageView(AdImage, db.session, name="Quảng cáo", endpoint="AdImage_view"))
-# Cập nhật cách thêm view vào Flask-Admin
-admin.add_view(RevenueReportView( name="Báo Cáo Doanh Thu", endpoint="revenue_report"))
 
-admin.add_view(RoomUsageReportView(name="Báo Cáo Mật Độ Sử Dụng Phòng", endpoint="room_usage_report"))
-
+admin.add_view(RevenueReportView(name="Báo Cáo Doanh Thu"))
+admin.add_view(RoomUsageReportView(name="Báo Cáo Mật Độ Sử Dụng Phòng"))
+# Thêm view đăng xuất
 admin.add_view(LogoutView(name="Đăng Xuất", endpoint="logout"))

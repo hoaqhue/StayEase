@@ -2,6 +2,13 @@
 
 {% block body %}
 <h2>Thống kê Mật độ Sử dụng Phòng Tháng {{ month }}</h2>
+<div align="right">
+    <form >
+    <label for="month">Chọn Tháng:</label>
+    <input type="month" id="month" name="month" value="{{ month }}">
+    <button type="submit">Lọc</button>
+</form>
+</div>
 <table class="table table-striped">
     <thead>
         <tr>
