@@ -373,14 +373,14 @@ class UserView(AuthenticatedView):
 
 class InvoiceView(AuthenticatedView):
     column_list = ['id', 'booking_form.client.full_name', 'payment_method.type',
-                   'booking_form.booking_room_details.total', 'created_date', 'status']
+                   'total', 'created_date', 'status']
     column_searchable_list = ['booking_form.client.full_name', 'payment_method.type', 'created_date', 'status']
     column_filters = ['booking_form.client.full_name', 'payment_method.type', 'created_date', 'status']
     column_labels = {
         'id': 'ID',
         'booking_form.client.full_name': 'Tên người dùng',
         'payment_method.type': 'Phương thức',
-        'booking_form.booking_room_details.total': 'Tổng tiền',
+        'total': 'Tổng tiền',
         'status': "Trạng thái",
         'created_date': 'Ngày tạo'
     }
