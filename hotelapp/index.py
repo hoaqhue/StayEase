@@ -25,7 +25,7 @@ from hotelapp.decorators import loggedin
 from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, Invoice, RoomType, \
     AdImage, \
     ClientType
-from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, Invoice
+
 
 # Khởi tạo Bcrypt
 bcrypt = Bcrypt(app)
@@ -75,6 +75,7 @@ def login_my_user():
                 login_user(user)
             elif user_role and user_role.type == "Admin":
                 login_user(user)
+                return redirect('/admin')
             else:
                 err_msg = 'Người dùng không có vai trò hợp lệ!'
                 return render_template('auth/login.html', err_msg=err_msg)
@@ -633,6 +634,15 @@ def callback():
     # thông báo kết quả cho ZaloPay server
     print(result)
     return jsonify(result)
+
+# Định nghĩa filter 'currency'
+@app.template_filter('currency')
+def currency_filter(value):
+    """Chuyển giá trị thành định dạng tiền tệ."""
+    try:
+        return f"{value:,.0f} đ"  # Định dạng tiền tệ theo kiểu VND
+    except (ValueError, TypeError):
+        return value  # Nếu không phải kiểu số, trả lại giá trị gốc
 
 
 if __name__ == "__main__":

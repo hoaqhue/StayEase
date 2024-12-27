@@ -1,7 +1,8 @@
 from hotelapp import db, app
 from hotelapp.models import (
     RoomType, RoomStatus, ClientType, UserRole,
-    PaymentMethod, Room, Client, User, Image, Regulation, BookingForm, BookingRoomDetails, AdImage
+    PaymentMethod, Room, Client, User, Image, Regulation, BookingForm, BookingRoomDetails, AdImage,
+
 )
 import hashlib
 from datetime import datetime
@@ -296,6 +297,8 @@ def seed_data():
     except Exception as e:
         db.session.rollback()
         print(f"Lỗi khi tạo dữ liệu mẫu: {e}")
+
+
 
 
 if __name__ == "__main__":
