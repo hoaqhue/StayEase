@@ -43,20 +43,23 @@
             <select id="client_type_id" name="client_type_id" class="form-select" required>
                 <option value="" disabled selected>Chọn loại khách</option>
                 {% for client_type in client_types %}
-                    <option value="{{ client_type.id }}"
-                        {% if client and client.client_type_id == client_type.id %}selected{% endif %}>
-                        {{ client_type.type }}
-                    </option>
+                <option value="{{ client_type.id }}"
+                        {% if client and client.client_type_id== client_type.id %}selected{% endif %}>
+                    {{ client_type.type }}
+                </option>
                 {% endfor %}
             </select>
         </div>
+
         <!-- Số lượng khách -->
         <div class="mb-3">
             <label for="passengers" class="form-label">Số lượng khách:</label>
             <input type="number" id="passengers" name="passengers" class="form-control" required
-                   placeholder="Nhập số lượng khách" min="1" max="3" value="1">
+                   placeholder="Nhập số lượng khách" min="1" max="{{max_passenger}}" value="1"
+                   onchange="updateGuestFields()">
         </div>
-
+        <!-- Các trường thông tin cho khách hàng phụ -->
+        <div id="additional-guests"></div>
         <!-- Ngày nhận phòng -->
         <div class="mb-3">
             <label for="check_in_date" class="form-label">Ngày nhận phòng:</label>
@@ -73,7 +76,6 @@
         </div>
 
 
-
         <!-- Nút gửi form -->
         <div class="d-grid">
             <button type="submit" class="btn btn-primary">Đặt phòng</button>
@@ -82,18 +84,63 @@
 
     <!-- Thông báo thành công -->
     {% if success %}
-        <div class="alert alert-success mt-4 d-flex align-items-center" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>
-            {{ success }}
-        </div>
+    <div class="alert alert-success mt-4 d-flex align-items-center" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        {{ success }}
+    </div>
     {% endif %}
 
     <!-- Thông báo lỗi -->
     {% if error %}
-        <div class="alert alert-danger mt-4 d-flex align-items-center" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            {{ error }}
-        </div>
+    <div class="alert alert-danger mt-4 d-flex align-items-center" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        {{ error }}
+    </div>
     {% endif %}
 </div>
+
+<script>
+    function updateGuestFields() {
+        var numGuests = document.getElementById('passengers').value;
+        var additionalGuestsDiv = document.getElementById('additional-guests');
+        additionalGuestsDiv.innerHTML = '';  // Clear existing fields
+
+        // Tạo các trường nhập cho từng khách phụ
+        for (var i = 1; i < numGuests; i++) {
+            var guestFields = `
+                <h5>Thông tin khách hàng ${i + 1}</h5>
+                <div class="mb-3">
+                    <label for="full_name_${i}" class="form-label">Tên khách hàng ${i + 1}:</label>
+                    <input type="text" id="full_name_${i}" name="full_name_${i}" class="form-control" required
+                           placeholder="Nhập tên khách hàng">
+                </div>
+                <div class="mb-3">
+                    <label for="phone_number_${i}" class="form-label">Số điện thoại ${i + 1}:</label>
+                    <input type="tel" id="phone_number_${i}" name="phone_number_${i}" class="form-control" required
+                           placeholder="Nhập số điện thoại" pattern="[0-9]{10}" title="Nhập 10 chữ số">
+                </div>
+                <div class="mb-3">
+                    <label for="identification_code_${i}" class="form-label">CCCD ${i + 1}:</label>
+                    <input type="text" id="identification_code_${i}" name="identification_code_${i}" class="form-control" required
+                           placeholder="Nhập CCCD" pattern="[0-9]{12}" title="Nhập 12 chữ số">
+                </div>
+                <div class="mb-3">
+                    <label for="client_type_id_${i}" class="form-label">Loại khách ${i + 1}:</label>
+                    <select id="client_type_id_${i}" name="client_type_id_${i}" class="form-select" required>
+                        <option value="" disabled selected>Chọn loại khách</option>
+                        {% for client_type in client_types %}
+                            <option value="{{ client_type.id }}">
+                                {{ client_type.type }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            `;
+            additionalGuestsDiv.innerHTML += guestFields;
+        }
+    }
+
+    // Gọi hàm để khởi tạo các trường thông tin khi trang load
+    updateGuestFields();
+</script>
 {% endblock %}

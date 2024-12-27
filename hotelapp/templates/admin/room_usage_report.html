@@ -22,7 +22,7 @@
         {% for row in data %}
             <tr>
                 <td>{{ loop.index }}</td>  <!-- Dùng loop.index để thay thế enumerate -->
-                <td>{{ row.room.name }}</td>  <!-- Giả sử 'room' có thuộc tính 'name' -->
+                <td>{{ row.room }}</td>  <!-- Giả sử 'room' có thuộc tính 'name' -->
                 <td>{{ row.rented_days }}</td>
                 <td>{{ row.rate | round(2) }}%</td>
             </tr>

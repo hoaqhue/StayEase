@@ -14,6 +14,18 @@ class Status(enum):
     SUCCESS = 1
     FAILED = 2
 
+class Guest(db.Model):
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    full_name = Column(String(100), nullable=False)
+    phone_number = Column(String(10), nullable=False)
+    identification_code = Column(String(12), nullable=False)
+    client_type_id = Column(Integer, ForeignKey('client_type.id'), nullable=False)
+    booking_form_id = Column(Integer, ForeignKey('booking_form.id'), nullable=False)
+
+    booking_form = db.relationship('BookingForm', back_populates='guests')
+
+    def __str__(self):
+        return f"Guest {self.full_name}"
 
 class BookingForm(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -24,6 +36,10 @@ class BookingForm(db.Model):
     client_id = Column(Integer, ForeignKey('client.client_id'), nullable=False)
     booking_room_details = db.relationship('BookingRoomDetails', back_populates='booking_form')
     client = db.relationship('Client', back_populates='booking_form')
+
+    # Quan hệ với khách hàng phụ
+    guests = db.relationship('Guest', back_populates='booking_form', cascade='all, delete-orphan')
+
 
 
     def __str__(self):
@@ -47,9 +63,9 @@ class Client(db.Model):
     client_id = Column(Integer, primary_key=True, autoincrement=True)
     full_name = Column(String(50), nullable=False)
     identification_code = Column(String(20), nullable=False, unique=True)
-    address = Column(String(50), nullable=False)
+    address = Column(String(50), nullable=True)
     phone_number = Column(String(50), nullable=True, unique=True)
-    email = Column(String(50), nullable=False)
+    email = Column(String(50), nullable=True)
     client_type_id = Column(Integer, ForeignKey('client_type.id'), nullable=True)
     booking_form = db.relationship("BookingForm", back_populates="client")
     client_type = db.relationship("ClientType", backref="client")
@@ -126,6 +142,7 @@ class RoomType(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     type = Column(String(20), nullable=False)
     price_million = Column(Float, default=0)
+    max_passenger = Column(Integer, nullable=True, default=3)
 
     def __str__(self):
         return self.type
