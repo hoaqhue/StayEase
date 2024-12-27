@@ -92,9 +92,14 @@
                         {% if room.room_status and room.room_status.status == 'Có sẵn' %}
                         <a href="{{ url_for('booking', room_id=room.id) }}"
                            class="btn btn-success rounded-pill shadow-sm">Đặt ngay</a>
+                        {% elif room.room_status and room.room_status.status == 'Vui lòng thanh toán' %}
+                        <a href="{{ url_for('booking_success') }}"
+                           class="btn btn-success rounded-pill shadow-sm">Thanh Toán</a>
+
                         {% else %}
                         <button class="btn btn-secondary rounded-pill shadow-sm" disabled>Không khả dụng</button>
                         {% endif %}
+
                     </div>
 
                 </div>

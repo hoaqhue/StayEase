@@ -5,6 +5,7 @@ import os
 import random
 import uuid
 from datetime import datetime, timedelta
+from os import error
 from time import time
 
 import requests
@@ -24,8 +25,7 @@ from hotelapp import app, dao, login, db, admin
 from hotelapp.decorators import loggedin
 from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, Invoice, RoomType, \
     AdImage, \
-    ClientType
-
+    ClientType, Guest
 
 # Khởi tạo Bcrypt
 bcrypt = Bcrypt(app)
@@ -35,10 +35,11 @@ bcrypt = Bcrypt(app)
 def index():
     ad_images = AdImage.query.all()
     room_types = dao.get_room_types()
+    max_passenger = 6
     today = datetime.now().date()
     next_28_day = (datetime.now() + timedelta(days=28)).date()
     return render_template('index.html', ad_images=ad_images, room_types=room_types, today=today,
-                           next_28_day=next_28_day)
+                           next_28_day=next_28_day, max_passenger=max_passenger)
 
 
 @app.route('/login-admin', methods=['POST'])
@@ -180,8 +181,18 @@ def search_rooms():
 
     query = Room.query.filter_by(room_status_id=available_status.id)
 
-    # Lọc theo loại phòng nếu có
-    if room_type_id:
+    if room_type_id is None:
+        # Lọc theo số lượng khách nếu room_type_id không được cung cấp
+        if passengers:
+            passengers = int(passengers)  # Đảm bảo passengers là một số nguyên
+            if passengers <= 3 and passengers > 0:
+                query = query.filter(Room.room_type.has(max_passenger=3))
+            elif passengers == 0:
+                query = query.filter(Room.room_type.has())  # Kiểm tra phòng không có giới hạn về số khách
+            else:
+                query = query.filter(Room.room_type.has(max_passenger=passengers))
+    else:
+        # Lọc theo loại phòng nếu room_type_id có giá trị
         query = query.filter(Room.room_type_id == room_type_id)
 
     if checkin and checkout:
@@ -260,6 +271,7 @@ from flask_login import current_user
 def booking(room_id):
     room = Room.query.get_or_404(room_id)
     client_types = dao.get_client_types()
+    max_passenger = room.room_type.max_passenger
 
     # Kiểm tra người dùng đã đăng nhập chưa
     if current_user.is_authenticated:
@@ -363,6 +375,26 @@ def booking(room_id):
             )
             db.session.add(booking_form)
             db.session.commit()
+            # Lặp qua các khách phụ
+            for i in range(1, int(passengers)):  # Lặp cho mỗi khách phụ
+                guest_full_name = request.form.get(f'full_name_{i}')
+                guest_phone_number = request.form.get(f'phone_number_{i}')
+                guest_identification_code = request.form.get(f'identification_code_{i}')
+                guest_client_type_id = request.form.get(f'client_type_id_{i}')
+
+                # Kiểm tra thông tin khách phụ
+                if not guest_full_name or not guest_phone_number or not guest_identification_code:
+                    return render_template('booking.html', error=f"Thông tin khách hàng phụ {i + 1} chưa đầy đủ.")
+
+                guest = Guest(
+                    full_name=request.form.get(f'full_name_{i}'),
+                    phone_number=request.form.get(f'phone_number_{i}'),
+                    identification_code=request.form.get(f'identification_code_{i}'),
+                    client_type_id=request.form.get(f'client_type_id_{i}'),
+                    booking_form_id=booking_form.id
+                )
+                db.session.add(guest)
+                db.session.commit()
 
             # Chuyển đổi giá phòng và số lượng hành khách
             room_price = float(room.room_type.price_million)  # Giá phòng phải là số thực
@@ -373,15 +405,13 @@ def booking(room_id):
             if len(client_types) < 2:
                 raise ValueError("Không đủ dữ liệu loại khách trong cơ sở dữ liệu.")
 
-
-             #Tính toán tổng giá trị dựa trên số lượng hành khách và loại khách
-            if passengers_count == 3:
+            # Tính toán tổng giá trị dựa trên số lượng hành khách và loại khách
+            if passengers_count == max_passenger:
                 total = room_price * (1 + client_types[0].coefficient)  # Tính giá với hệ số từ loại khách
             elif client_type_id == 1:
                 total = room_price * (1 + client_types[1].coefficient)  # Nếu là loại khách đặc biệt, áp dụng hệ số
             else:
                 total = room_price  # Giá mặc định
-
 
             # Tạo đối tượng BookingRoomDetails
             booking_detail = BookingRoomDetails(
@@ -394,11 +424,12 @@ def booking(room_id):
             print(f"Total: {total}, Booking Form ID: {booking_form.id}")
 
             # Cập nhật trạng thái phòng
-            room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
+            room.room_status_id = RoomStatus.query.filter_by(status="Vui lòng thanh toán").first().id
             db.session.commit()
 
             # Sau khi đặt phòng thành công, render template payment.html
-            booking_forms = BookingForm.query.filter_by(client_id=client.client_id).order_by(BookingForm.id.desc()).all()
+            booking_forms = BookingForm.query.filter_by(client_id=client.client_id).order_by(
+                BookingForm.id.desc()).all()
             return render_template(
                 'payment.html',
                 booking_form=booking_form,
@@ -408,15 +439,39 @@ def booking(room_id):
         except Exception as e:
             db.session.rollback()
             return render_template('booking.html', room=room, error=f"Lỗi: {str(e)}", client_types=client_types,
-                                   client=client)
+                                   client=client, max_passenger=max_passenger)
 
-    return render_template('booking.html', room=room, client_types=client_types, client=client)
+    return render_template('booking.html', room=room, client_types=client_types, client=client,
+                           max_passenger=max_passenger)
 
 
 @app.route("/forms")
 def forms():
     forms = dao.get_forms()
     return render_template("forms.html", forms=forms)
+
+
+@app.route('/booking_success', methods=['POST', 'GET'])
+def booking_success():
+    # Lấy client_id từ đối tượng người dùng đã đăng nhập
+    if current_user.is_authenticated:
+        client_id = current_user.client_id  # client_id là id của người dùng hiện tại
+    else:
+        # Xử lý khi người dùng chưa đăng nhập
+        return redirect(url_for('login'))
+
+    # Lấy đơn đặt phòng mới nhất của khách hàng
+    booking_form = BookingForm.query.filter_by(client_id=client_id).order_by(BookingForm.id.desc()).first()
+
+    # Lấy tất cả các đơn đặt phòng của khách hàng
+    booking_forms = BookingForm.query.filter_by(client_id=client_id).order_by(BookingForm.id.desc()).all()
+
+    # Render trang thanh toán và truyền dữ liệu booking_form và booking_forms vào template
+    return render_template(
+        'payment.html',
+        booking_form=booking_form,  # Đơn đặt phòng vừa được tạo
+        booking_forms=booking_forms  # Tất cả các đơn đặt phòng của khách hàng
+    )
 
 
 @app.route('/checkin/<int:form_id>', methods=['GET', 'POST'])
@@ -546,15 +601,23 @@ def momo_ipn():
     result_code = data["resultCode"]
     orderId = data['orderId']
 
-    if result_code != 0:
-        return jsonify({'error': "Thanh toán thất bại",
-                        'status': 400})
+    if result_code != 0:  # Thanh toán thất bại
+        return jsonify({'error': "Thanh toán thất bại", 'status': 400})
 
     try:
         print("Thanh toán thành công!", orderId)
-        # dao.update_invoices(orderId)
-        return jsonify({'status': 200})
+        # Cập nhật trạng thái phòng chỉ khi thanh toán thành công
+        booking_form = BookingForm.query.filter_by(order_id=orderId).first()
+        if booking_form:
+            room = Room.query.get_or_404(booking_form.room_id)
+
+            # Cập nhật trạng thái phòng sau khi thanh toán thành công
+            room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
+            db.session.commit()
+
+        return jsonify({'status': 200})  # Thanh toán thành công và trạng thái phòng đã được cập nhật
     except Exception as e:
+        print(f"Error while processing payment: {e}")
         return jsonify({'status': 500, 'error': str(e)})
 
 
@@ -634,6 +697,7 @@ def callback():
     # thông báo kết quả cho ZaloPay server
     print(result)
     return jsonify(result)
+
 
 # Định nghĩa filter 'currency'
 @app.template_filter('currency')

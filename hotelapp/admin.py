@@ -180,13 +180,14 @@ class ClientView(AuthenticatedView):
 
 
 class RoomTypeView(AuthenticatedView):
-    column_list = ['id', 'type', 'price_million']
-    column_searchable_list = ['type']
-    column_filters = ['price_million']
+    column_list = ['id', 'type', 'price_million','max_passenger']
+    column_searchable_list = ['type','max_passenger']
+    column_filters = ['type','price_million','max_passenger']
     column_labels = {
         'id': "ID",
         'type': 'Loại Phòng',
-        'price_million': 'Giá'
+        'price_million': 'Giá',
+        'max_passenger': 'Số khách tối đa'
     }
 
 

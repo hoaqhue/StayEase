@@ -1,7 +1,7 @@
 from hotelapp import db, app
 from hotelapp.models import (
     RoomType, RoomStatus, ClientType, UserRole,
-    PaymentMethod, Room, Client, User, Image, Regulation, BookingForm, BookingRoomDetails, AdImage,
+    PaymentMethod, Room, Client, User, Image, Regulation, BookingForm, BookingRoomDetails, AdImage, Invoice,
 
 )
 import hashlib
@@ -11,6 +11,7 @@ from datetime import datetime
 def seed_data():
     try:
         # Xóa dữ liệu cũ
+        db.session.query(Invoice).delete()
         db.session.query(BookingRoomDetails).delete()
         db.session.query(BookingForm).delete()
         db.session.query(Image).delete()
@@ -41,10 +42,10 @@ def seed_data():
 
         # Tạo loại phòng
         room_types = [
-            RoomType(type="Deluxe", price_million=1000000),  # Deluxe Room
-            RoomType(type="Standard", price_million=800000),  # Standard Room
-            RoomType(type="Suite Family", price_million=1500000),  # Family Suite
-            RoomType(type="Presidential", price_million=3000000),  # Presidential Suite
+            RoomType(type="Deluxe", price_million=1000000,max_passenger=3),  # Deluxe Room
+            RoomType(type="Standard", price_million=800000,max_passenger=4),  # Standard Room
+            RoomType(type="Suite Family", price_million=1500000,max_passenger=5),  # Family Suite
+            RoomType(type="Presidential", price_million=3000000,max_passenger=6),  # Presidential Suite
         ]
 
         db.session.add_all(room_types)
@@ -55,6 +56,7 @@ def seed_data():
             RoomStatus(status="Có sẵn"),
             RoomStatus(status="Bảo trì"),
             RoomStatus(status="Đã đặt"),
+            RoomStatus(status='Vui lòng thanh toán')
         ]
         db.session.add_all(room_statuses)
         db.session.commit()
