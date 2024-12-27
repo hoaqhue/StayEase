@@ -5,7 +5,6 @@ import os
 import random
 import uuid
 from datetime import datetime, timedelta
-from os import error
 from time import time
 
 import requests

@@ -58,23 +58,33 @@
                    placeholder="Nhập số lượng khách" min="1" max="{{max_passenger}}" value="1"
                    onchange="updateGuestFields()">
         </div>
-        <!-- Các trường thông tin cho khách hàng phụ -->
-        <div id="additional-guests"></div>
-        <!-- Ngày nhận phòng -->
-        <div class="mb-3">
-            <label for="check_in_date" class="form-label">Ngày nhận phòng:</label>
-            <input type="date" id="check_in_date" name="check_in_date" class="form-control"
-                   required min="{{ today }}" max="{{ max_check_in | default('') }}" value="{{ today }}"
-                   onchange="updateCheckoutMinDate()">
-        </div>
 
-        <!-- Ngày trả phòng -->
-        <div class="mb-3">
-            <label for="check_out_date" class="form-label">Ngày trả phòng:</label>
-            <input type="date" id="check_out_date" name="check_out_date" class="form-control"
-                   required min="{{ today }}" max="{{ max_check_out | default('') }}" value="{{ today }}">
-        </div>
+        <!--        &lt;!&ndash; Ngày nhận phòng &ndash;&gt;-->
+        <!--        <div class="mb-3">-->
+        <!--            <label for="check_in_date" class="form-label">Ngày nhận phòng:</label>-->
+        <!--            <input type="date" id="check_in_date" name="check_in_date" class="form-control"-->
+        <!--                   required min="{{ today }}" max="{{ max_check_in | default('') }}" value="{{ today }}"-->
+        <!--                   onchange="updateCheckoutMinDate()">-->
+        <!--        </div>-->
 
+        <!--        &lt;!&ndash; Ngày trả phòng &ndash;&gt;-->
+        <!--        <div class="mb-3">-->
+        <!--            <label for="check_out_date" class="form-label">Ngày trả phòng:</label>-->
+        <!--            <input type="date" id="check_out_date" name="check_out_date" class="form-control"-->
+        <!--                   required min="{{ today }}" max="{{ max_check_out | default('') }}" value="{{ today }}">-->
+        <!--        </div>-->
+        <form method="POST">
+            <div class="form-group">
+<!--                <label for="check_in_date">Ngày nhận phòng</label>-->
+                <input type="hidden" id="check_in_date" name="check_in_date" class="form-control" value="{{ checkin }}"
+                       required>
+            </div>
+            <div class="form-group">
+<!--                <label for="check_out_date">Ngày trả phòng</label>-->
+                <input type="hidden" id="check_out_date" name="check_out_date" class="form-control" value="{{ checkout }}"
+                       required>
+            </div>
+        </form>
 
         <!-- Nút gửi form -->
         <div class="d-grid">
