@@ -180,14 +180,13 @@ class ClientView(AuthenticatedView):
 
 
 class RoomTypeView(AuthenticatedView):
-    column_list = ['id', 'type', 'price_million','max_passenger']
-    column_searchable_list = ['type','max_passenger']
-    column_filters = ['type','price_million','max_passenger']
+    column_list = ['id', 'type', 'price_million']
+    column_searchable_list = ['type']
+    column_filters = ['price_million']
     column_labels = {
         'id': "ID",
         'type': 'Loại Phòng',
-        'price_million': 'Giá',
-        'max_passenger': 'Số khách tối đa'
+        'price_million': 'Giá'
     }
 
 
@@ -225,7 +224,9 @@ class RevenueReportView(BaseView):
                 func.sum(BookingRoomDetails.total).label('revenue'),
                 func.count(BookingRoomDetails.id).label('rented_count')
             ).join(
-                BookingRoomDetails, BookingRoomDetails.room_id == RoomType.id
+                Room, Room.room_type_id == RoomType.id
+            ).join(
+                BookingRoomDetails, BookingRoomDetails.room_id== Room.id
             ).join(
                 BookingForm, BookingForm.id == BookingRoomDetails.booking_form_id
             ).filter(
@@ -373,14 +374,14 @@ class UserView(AuthenticatedView):
 
 class InvoiceView(AuthenticatedView):
     column_list = ['id', 'booking_form.client.full_name', 'payment_method.type',
-                   'total', 'created_date', 'status']
+                   'booking_form.booking_room_details.total', 'created_date', 'status']
     column_searchable_list = ['booking_form.client.full_name', 'payment_method.type', 'created_date', 'status']
     column_filters = ['booking_form.client.full_name', 'payment_method.type', 'created_date', 'status']
     column_labels = {
         'id': 'ID',
         'booking_form.client.full_name': 'Tên người dùng',
         'payment_method.type': 'Phương thức',
-        'total': 'Tổng tiền',
+        'booking_form.booking_room_details.total': 'Tổng tiền',
         'status': "Trạng thái",
         'created_date': 'Ngày tạo'
     }
