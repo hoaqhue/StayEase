@@ -7,14 +7,13 @@
     <h1 class="text-center mb-4 text-primary">Đặt phòng khách sạn</h1>
 
     <form method="POST" action="{{ url_for('booking', room_id=room.id) }}" class="shadow p-4 bg-light rounded">
-        <!-- Tên khách hàng -->
+        <!-- Thông tin khách hàng -->
         <div class="mb-3">
             <label for="full_name" class="form-label">Tên khách hàng:</label>
             <input type="text" id="full_name" name="full_name" class="form-control" required
                    placeholder="Nhập tên khách hàng" value="{{ client.full_name if client else '' }}">
         </div>
 
-        <!-- Số điện thoại -->
         <div class="mb-3">
             <label for="phone_number" class="form-label">Số điện thoại:</label>
             <input type="tel" id="phone_number" name="phone_number" class="form-control" required
@@ -22,14 +21,12 @@
                    value="{{ client.phone_number if client else '' }}">
         </div>
 
-        <!-- Email -->
         <div class="mb-3">
             <label for="email" class="form-label">Email:</label>
             <input type="email" id="email" name="email" class="form-control" required
                    placeholder="Nhập email" value="{{ client.email if client else '' }}">
         </div>
 
-        <!-- CCCD -->
         <div class="mb-3">
             <label for="identification_code" class="form-label">CCCD:</label>
             <input type="text" id="identification_code" name="identification_code" class="form-control" required
@@ -37,7 +34,6 @@
                    value="{{ client.identification_code if client else '' }}">
         </div>
 
-        <!-- Loại khách -->
         <div class="mb-3">
             <label for="client_type_id" class="form-label">Loại khách:</label>
             <select id="client_type_id" name="client_type_id" class="form-select" required>
@@ -51,46 +47,31 @@
             </select>
         </div>
 
-        <!-- Số lượng khách -->
+        <!-- Thông tin đặt phòng -->
+        <div class="mb-3">
+            <label for="check_in_date" class="form-label">Ngày nhận phòng:</label>
+            <input type="date" id="check_in_date" name="check_in_date" class="form-control"
+                   value="{{ request.args.get('check_in_date', '') }}" required readonly>
+        </div>
+
+        <div class="mb-3">
+            <label for="check_out_date" class="form-label">Ngày trả phòng:</label>
+            <input type="date" id="check_out_date" name="check_out_date" class="form-control"
+                   value="{{ request.args.get('check_out_date', '') }}" required readonly>
+        </div>
+
         <div class="mb-3">
             <label for="passengers" class="form-label">Số lượng khách:</label>
             <input type="number" id="passengers" name="passengers" class="form-control" required
-                   placeholder="Nhập số lượng khách" min="1" max="{{max_passenger}}" value="1"
-                   onchange="updateGuestFields()">
+                   placeholder="Nhập số lượng khách" min="1" max="{{ max_passenger }}" value="1">
         </div>
 
-        <!--        &lt;!&ndash; Ngày nhận phòng &ndash;&gt;-->
-        <!--        <div class="mb-3">-->
-        <!--            <label for="check_in_date" class="form-label">Ngày nhận phòng:</label>-->
-        <!--            <input type="date" id="check_in_date" name="check_in_date" class="form-control"-->
-        <!--                   required min="{{ today }}" max="{{ max_check_in | default('') }}" value="{{ today }}"-->
-        <!--                   onchange="updateCheckoutMinDate()">-->
-        <!--        </div>-->
-
-        <!--        &lt;!&ndash; Ngày trả phòng &ndash;&gt;-->
-        <!--        <div class="mb-3">-->
-        <!--            <label for="check_out_date" class="form-label">Ngày trả phòng:</label>-->
-        <!--            <input type="date" id="check_out_date" name="check_out_date" class="form-control"-->
-        <!--                   required min="{{ today }}" max="{{ max_check_out | default('') }}" value="{{ today }}">-->
-        <!--        </div>-->
-        <form method="POST">
-            <div class="form-group">
-<!--                <label for="check_in_date">Ngày nhận phòng</label>-->
-                <input type="hidden" id="check_in_date" name="check_in_date" class="form-control" value="{{ checkin }}"
-                       required>
-            </div>
-            <div class="form-group">
-<!--                <label for="check_out_date">Ngày trả phòng</label>-->
-                <input type="hidden" id="check_out_date" name="check_out_date" class="form-control" value="{{ checkout }}"
-                       required>
-            </div>
-        </form>
-
-        <!-- Nút gửi form -->
+        <!-- Nút submit -->
         <div class="d-grid">
             <button type="submit" class="btn btn-primary">Đặt phòng</button>
         </div>
     </form>
+
 
     <!-- Thông báo thành công -->
     {% if success %}
@@ -108,49 +89,4 @@
     </div>
     {% endif %}
 </div>
-
-<script>
-    function updateGuestFields() {
-        var numGuests = document.getElementById('passengers').value;
-        var additionalGuestsDiv = document.getElementById('additional-guests');
-        additionalGuestsDiv.innerHTML = '';  // Clear existing fields
-
-        // Tạo các trường nhập cho từng khách phụ
-        for (var i = 1; i < numGuests; i++) {
-            var guestFields = `
-                <h5>Thông tin khách hàng ${i + 1}</h5>
-                <div class="mb-3">
-                    <label for="full_name_${i}" class="form-label">Tên khách hàng ${i + 1}:</label>
-                    <input type="text" id="full_name_${i}" name="full_name_${i}" class="form-control" required
-                           placeholder="Nhập tên khách hàng">
-                </div>
-                <div class="mb-3">
-                    <label for="phone_number_${i}" class="form-label">Số điện thoại ${i + 1}:</label>
-                    <input type="tel" id="phone_number_${i}" name="phone_number_${i}" class="form-control" required
-                           placeholder="Nhập số điện thoại" pattern="[0-9]{10}" title="Nhập 10 chữ số">
-                </div>
-                <div class="mb-3">
-                    <label for="identification_code_${i}" class="form-label">CCCD ${i + 1}:</label>
-                    <input type="text" id="identification_code_${i}" name="identification_code_${i}" class="form-control" required
-                           placeholder="Nhập CCCD" pattern="[0-9]{12}" title="Nhập 12 chữ số">
-                </div>
-                <div class="mb-3">
-                    <label for="client_type_id_${i}" class="form-label">Loại khách ${i + 1}:</label>
-                    <select id="client_type_id_${i}" name="client_type_id_${i}" class="form-select" required>
-                        <option value="" disabled selected>Chọn loại khách</option>
-                        {% for client_type in client_types %}
-                            <option value="{{ client_type.id }}">
-                                {{ client_type.type }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-            `;
-            additionalGuestsDiv.innerHTML += guestFields;
-        }
-    }
-
-    // Gọi hàm để khởi tạo các trường thông tin khi trang load
-    updateGuestFields();
-</script>
 {% endblock %}

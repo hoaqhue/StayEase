@@ -5,43 +5,41 @@
 {% block content %}
 
 <!-- Thanh tìm kiếm cố định -->
-<div class="text-center shadow rounded fixed-search" >
+<div class="text-center shadow rounded fixed-search">
     <h1 class="text-primary">Tìm phòng</h1>
-    <form method="post" action="/search_rooms" class="p-2" id="searchForm">
+    <form method="GET" action="{{ url_for('rooms') }}" class="p-2" id="searchForm">
         <div class="row align-items-center">
-            <div class="col col-md-2 col-3">
-                <label>Ngày nhận phòng:</label>
+            <div class="col-md-3 col-6">
+                <label for="check_in_date" class="form-label">Ngày nhận phòng:</label>
+                <input type="date" id="check_in_date" name="check_in_date" class="form-control" required
+                       min="{{ today }}" max="{{ next_28_day }}">
             </div>
-            <div class="col col-md-4 col-9 mb-2">
-                <input type="date" class="form-control" id="check_in_date" name="check_in_date" required
-                       max="{{ next_28_day }}" onchange="updateCheckoutMinDate()">
+            <div class="col-md-3 col-6">
+                <label for="check_out_date" class="form-label">Ngày trả phòng:</label>
+                <input type="date" id="check_out_date" name="check_out_date" class="form-control" required
+                       min="{{ today }}">
             </div>
-            <div class="col col-md-2 col-3">
-                <label>Ngày trả phòng:</label>
-            </div>
-            <div class="col col-md-4 col-9 mb-2">
-                <input type="date" class="form-control" id="check_out_date" name="check_out_date" required min=""/>
-            </div>
-            <div class="col col-md-2 col-3">
-                <label>Loại phòng:</label>
-            </div>
-            <div class="col col-md-4 col-9 mb-2">
-                <select class="form-select" aria-label="Default select example" name="ticket_class">
-                    <option value="" selected disabled>Loại phòng</option>
+            <div class="col-md-3 col-6">
+                <label for="ticket_class" class="form-label">Loại phòng:</label>
+                <select id="ticket_class" name="ticket_class" class="form-select">
+                    <option value="" selected disabled>Chọn loại phòng</option>
                     {% for i in room_types %}
                     <option value="{{ i.id }}">{{ i.type }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col col-md-2 col-3">
-                <label>Số lượng khách</label>
+            <div class="col-md-3 col-6">
+                <label for="passengers" class="form-label">Số lượng khách:</label>
+                <input type="number" id="passengers" name="passengers" class="form-control" min="1"
+                       max="{{ max_passenger }}"
+                       required>
             </div>
-            <div class="col col-md-4 col-9">
-                <input type="number" class="form-control" value=0 min="0"  max="{{max_passenger}}" step="1" name="passengers">
+            <div class="col-md-12 text-center mt-3">
+                <button type="submit" class="btn btn-primary">Tra cứu</button>
             </div>
         </div>
-        <input type="submit" value="Tra cứu" class="btn btn-success mt-2">
     </form>
+
 </div>
 
 <!-- Quảng cáo ảnh động với Carousel -->
@@ -70,7 +68,8 @@
 <div class="container-fluid p-0 mt-4">
     <div style="width: 100%; height: 65vh; position: relative; background-color: #000; overflow: hidden; border-radius: 10px;">
         <!-- Video (ẩn ban đầu) -->
-        <iframe id="video1" width="100%" height="100%" src="https://www.youtube.com/embed/Yo5heY2UiWU?si=lDY_-r-J4oYdC2S_"
+        <iframe id="video1" width="100%" height="100%"
+                src="https://www.youtube.com/embed/Yo5heY2UiWU?si=lDY_-r-J4oYdC2S_"
                 title="YouTube video player" frameborder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 referrerpolicy="strict-origin-when-cross-origin" allowfullscreen
@@ -91,7 +90,8 @@
     <div class="text-center mt-2"
          style="padding: 15px; background-color: #f8f9fa; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
         <h2 style="font-size: 24px; font-weight: bold; color: #333;">Trải nghiệm dịch vụ bữa tối hoàn hảo</h2>
-        <p style="font-size: 16px; color: #666;">Khám phá các gói dịch vụ ăn uống sang trọng với giá ưu đãi và dịch vụ tận tình. Chỉ vài cú nhấp chuột, kỳ nghỉ mơ ước sẽ trong tầm tay bạn.</p>
+        <p style="font-size: 16px; color: #666;">Khám phá các gói dịch vụ ăn uống sang trọng với giá ưu đãi và dịch vụ
+            tận tình. Chỉ vài cú nhấp chuột, kỳ nghỉ mơ ước sẽ trong tầm tay bạn.</p>
     </div>
 </div>
 <div class="container-fluid p-0 mt-4">
@@ -99,11 +99,13 @@
     <div class="text-center mt-2"
          style="padding: 15px; background-color: #f8f9fa; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
         <h2 style="font-size: 24px; font-weight: bold; color: #333;">Trải nghiệm dịch vụ lễ cưới hoàn hảo</h2>
-        <p style="font-size: 16px; color: #666;">Khám phá các gói dịch vụ tiệc cưới sang trọng với giá ưu đãi và dịch vụ tận tình. Chỉ vài cú nhấp chuột, kỷ niệm đầy mơ ước sẽ trong tầm tay bạn.</p>
+        <p style="font-size: 16px; color: #666;">Khám phá các gói dịch vụ tiệc cưới sang trọng với giá ưu đãi và dịch vụ
+            tận tình. Chỉ vài cú nhấp chuột, kỷ niệm đầy mơ ước sẽ trong tầm tay bạn.</p>
     </div>
     <div style="width: 100%; height: 65vh; position: relative; background-color: #000; overflow: hidden; border-radius: 10px;">
         <!-- Video (ẩn ban đầu) -->
-        <iframe id="video2" width="100%" height="100%" src="https://www.youtube.com/embed/zkHeWTr9xq8?si=NRdX7hYJbGdBAQ81"
+        <iframe id="video2" width="100%" height="100%"
+                src="https://www.youtube.com/embed/zkHeWTr9xq8?si=NRdX7hYJbGdBAQ81"
                 title="YouTube video player" frameborder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 referrerpolicy="strict-origin-when-cross-origin" allowfullscreen
@@ -120,10 +122,6 @@
         </div>
     </div>
 </div>
-
-
-
-
 
 
 {% endblock %}

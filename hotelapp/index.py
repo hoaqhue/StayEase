@@ -5,6 +5,7 @@ import os
 import random
 import uuid
 from datetime import datetime, timedelta
+from distutils.command.config import config
 from time import time
 
 import requests
@@ -24,7 +25,8 @@ from hotelapp import app, dao, login, db, admin
 from hotelapp.decorators import loggedin
 from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, Invoice, RoomType, \
     AdImage, \
-    ClientType, Guest
+    ClientType, Guest, Status, PaymentMethod
+from hotelapp.vnpay import Vnpay
 
 # Khởi tạo Bcrypt
 bcrypt = Bcrypt(app)
@@ -206,7 +208,7 @@ def search_rooms():
                     BookingForm.check_out_date > checkin_date
                 )
             )
-            dao.update_room_status(checkin_date)
+            # dao.update_room_status(checkin_date)
             query = query.filter(~Room.id.in_(booking_subquery))
         except ValueError:
             return "Invalid date format", 400
@@ -217,8 +219,7 @@ def search_rooms():
 
 @app.route('/rooms')
 def rooms():
-    dao.update_room_status(datetime.now())
-    # Lấy danh sách loại phòng để hiển thị trong dropdown
+    # dao.update_room_status(datetime.now())
     room_types = RoomType.query.all()
 
     # Lấy các tham số lọc từ query string
@@ -226,10 +227,8 @@ def rooms():
     checkout = request.args.get('check_out_date')
     room_type_id = request.args.get('ticket_class', type=int)
 
-    # Truy vấn danh sách phòng
     query = Room.query
 
-    # Lọc theo loại phòng nếu có
     if room_type_id:
         query = query.filter(Room.room_type_id == room_type_id)
 
@@ -245,14 +244,12 @@ def rooms():
                     BookingForm.check_out_date > checkin_date
                 )
             )
-            dao.update_room_status(checkin_date)
+            # dao.update_room_status(checkin_date)
             query = query.filter(~Room.id.in_(booking_subquery))
         except ValueError:
             return "Invalid date format", 400
-    # Lấy danh sách phòng sau khi áp dụng bộ lọc
     rooms = query.all()
 
-    # Truyền dữ liệu sang template
     return render_template(
         'rooms.html',
         rooms=rooms,
@@ -263,12 +260,15 @@ def rooms():
     )
 
 
+
 from flask_login import current_user
 
 
 @app.route('/booking/<int:room_id>', methods=['GET', 'POST'])
 def booking(room_id):
+    print("room_id nhận được:", room_id)
     room = Room.query.get_or_404(room_id)
+    print(room.name)
     client_types = dao.get_client_types()
     max_passenger = room.room_type.max_passenger
 
@@ -279,7 +279,6 @@ def booking(room_id):
     else:
         # Nếu người dùng chưa đăng nhập, chuyển hướng đến trang đăng nhập
         return redirect('/login')
-
     if request.method == 'POST':
         try:
             # Lấy dữ liệu từ form
@@ -294,6 +293,7 @@ def booking(room_id):
             # Lấy ngày nhận và ngày trả phòng từ form
             checkin = request.form['check_in_date']
             checkout = request.form['check_out_date']
+            print("dòng 294", request.form)
             # Kiểm tra các trường dữ liệu
             if not full_name:
                 return render_template('booking.html', error="Vui lòng nhập tên khách hàng.")
@@ -314,6 +314,7 @@ def booking(room_id):
 
             if checkin and checkout:
                 try:
+                    print("dòng 315", room.name)
                     checkin_date = datetime.strptime(checkin, '%Y-%m-%d')  # Định dạng ngày tháng
                     checkout_date = datetime.strptime(checkout, '%Y-%m-%d')
 
@@ -335,7 +336,7 @@ def booking(room_id):
                                                error="Phòng đã được đặt trong khoảng thời gian này!")
 
                     # Cập nhật trạng thái phòng hết hạn
-                    dao.update_room_status(checkin_date)
+                    # dao.update_room_status(checkin_date)
 
                 except ValueError:
                     return render_template('booking.html', room=room, error="Định dạng ngày không hợp lệ!",
@@ -376,6 +377,7 @@ def booking(room_id):
             db.session.commit()
             # Lặp qua các khách phụ
             for i in range(1, int(passengers)):  # Lặp cho mỗi khách phụ
+                print(i)
                 guest_full_name = request.form.get(f'full_name_{i}')
                 guest_phone_number = request.form.get(f'phone_number_{i}')
                 guest_identification_code = request.form.get(f'identification_code_{i}')
@@ -423,7 +425,7 @@ def booking(room_id):
             print(f"Total: {total}, Booking Form ID: {booking_form.id}")
 
             # Cập nhật trạng thái phòng
-            room.room_status_id = RoomStatus.query.filter_by(status="Vui lòng thanh toán").first().id
+            # room.room_status_id = RoomStatus.query.filter_by(status="Vui lòng thanh toán").first().id
             db.session.commit()
 
             # Sau khi đặt phòng thành công, render template payment.html
@@ -448,6 +450,7 @@ def booking(room_id):
 def forms():
     forms = dao.get_forms()
     return render_template("forms.html", forms=forms)
+
 
 
 @app.route('/booking_success', methods=['POST', 'GET'])
@@ -497,14 +500,29 @@ def pay(form_id):
         flash("Bạn phải đăng nhập để thực hiện hành động này.", "danger")
         return redirect("/login")
 
-    trans_id = str(uuid.uuid4())
-    invoice = dao.create_invoice(form_id, 1, trans_id)
+    payment_method_id = request.form.get('payment_method_id')
+    payment_method = PaymentMethod.query.get(payment_method_id)
+    if not payment_method:
+        flash("Phương thức thanh toán không hợp lệ.", "danger")
+        return redirect('/my-booking')
+    trans_id = ""
 
-    # Sử dụng url_for để tạo URL tuyệt đối cho API Momo-Pay
-    momo_api_url = url_for('momo_pay', _external=True)
+    api_url=""
+    match payment_method.type:
+        case "MomoPay":
+            api_url = url_for('momo_pay', _external=True)
+            trans_id = str(uuid.uuid4())
+        case "ZaloPay":
+            transID = random.randrange(1000000)
+            api_url = url_for('zalo_pay', _external=True)
+            trans_id = "{:%y%m%d}_{}".format(datetime.today(), transID)
+        case "VNPay":
+            trans_id = str(uuid.uuid4())
+            api_url = url_for('vnpay_payment', _external=True)
 
+    invoice = dao.create_invoice(form_id, payment_method.id, trans_id)
     try:
-        response = requests.post(momo_api_url, json={
+        response = requests.post(api_url, json={
             "total": invoice.total,
             "trans_id": trans_id
         })
@@ -520,26 +538,21 @@ def pay(form_id):
 
 @app.route('/api/momo-pay', methods=['POST'])
 def momo_pay():
-    print(app.config.get("SERVER_URL"), app.config.get("MOMO_CREATE_URL"))
     endpoint = app.config.get("MOMO_CREATE_URL")
     partnerCode = "MOMO"
     accessKey = "F8BBA842ECF85"
     secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz"
     requestId = str(uuid.uuid4())
     amount = str(int((request.json.get('total'))))
-    print(amount)
     orderId = str((request.json.get('trans_id')))
-    print(f"Received amount: {amount}, trans_id: {orderId}")
     orderInfo = "Pay with MoMo"
     requestType = "captureWallet"
     extraData = ""
-    redirectUrl = str(app.config.get("SERVER_URL"))
+    redirectUrl = str(app.config.get("SERVER_URL")) + "/my-booking"
     ipnUrl = (app.config.get("SERVER_URL") + "/api/momo-pay/ipn")
     rawSignature = "accessKey=" + accessKey + "&amount=" + amount + "&extraData=" + extraData + "&ipnUrl=" + ipnUrl + "&orderId=" + orderId + "&orderInfo=" + orderInfo + "&partnerCode=" + partnerCode + "&redirectUrl=" + redirectUrl + "&requestId=" + requestId + "&requestType=" + requestType
     h = hmac.new(bytes(secretKey, 'ascii'), bytes(rawSignature, 'ascii'), hashlib.sha256)
     signature = h.hexdigest()
-    print(f"Raw signature: {rawSignature}")
-    print(f"Generated signature: {signature}")
 
     data = {
         'partnerCode': partnerCode,
@@ -555,13 +568,11 @@ def momo_pay():
         'requestType': requestType,
         'signature': signature
     }
-    print(f"Payload: {data}")
 
     # Gửi yêu cầu đến MoMo
     response = requests.post(endpoint, json=data, headers={'Content-Type': 'application/json'})
     if response.status_code == 200:
         response_data = response.json()
-        print(f"MoMo response: {response_data}")
         return jsonify({
             'ok': '200',
             'payUrl': response_data.get('payUrl'),
@@ -572,7 +583,6 @@ def momo_pay():
         return jsonify({'error': 'Error from MoMo', 'details': response.json()}), response.status_code
 
     data = json.dumps(data)
-    print(data)
 
     clen = len(data)
     response = requests.post(endpoint, data=data,
@@ -589,14 +599,12 @@ def momo_pay():
         # return redirect(response_data.get('payUrl'))
 
     else:
-        print(response.json())
         return jsonify({'error': 'Invalid request method'})
 
 
 @app.route('/api/momo-pay/ipn', methods=['POST'])
 def momo_ipn():
     data = json.loads(request.get_data(as_text=True))
-    print(data)
     result_code = data["resultCode"]
     orderId = data['orderId']
 
@@ -604,14 +612,16 @@ def momo_ipn():
         return jsonify({'error': "Thanh toán thất bại", 'status': 400})
 
     try:
-        print("Thanh toán thành công!", orderId)
         # Cập nhật trạng thái phòng chỉ khi thanh toán thành công
-        booking_form = BookingForm.query.filter_by(order_id=orderId).first()
-        if booking_form:
-            room = Room.query.get_or_404(booking_form.room_id)
-
+        invoice = Invoice.query.filter_by(transaction_id=orderId).first()
+        if invoice:
+            # print(invoice.booking_form)
+            # room = Room.query.get_or_404(invoice.booking_form_id.room_id.id)
+            invoice.status = Status.SUCCESS
+            form = BookingForm.query.get(invoice.booking_form_id)
+            form.is_paid = True
             # Cập nhật trạng thái phòng sau khi thanh toán thành công
-            room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
+            # room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
             db.session.commit()
 
         return jsonify({'status': 200})  # Thanh toán thành công và trạng thái phòng đã được cập nhật
@@ -628,11 +638,10 @@ def zalo_pay():
     appuser = "user123"
     transID = random.randrange(1000000)
     apptime = int(round(time() * 1000))  # miliseconds
-    app_trans_id = "{:%y%m%d}_{}".format(datetime.today(), transID)
-    print("t", app_trans_id)
-    embeddata = json.dumps({"redirecturl": str(app.config.get("SERVER_URL"))})
+    app_trans_id = str((request.json.get('trans_id')))
+    amount = str(int((request.json.get('total'))))
+    embeddata = json.dumps({"redirecturl": str(app.config.get("SERVER_URL")) + "/my-booking"})
     item = json.dumps([{}])
-    amount = str((request.json.get('total')))
     callback_url = (app.config.get("SERVER_URL") + "/api/zalo-pay/callback")
 
     # Tạo chuỗi dữ liệu theo định dạng yêu cầu
@@ -661,7 +670,6 @@ def zalo_pay():
 
     if response.status_code == 200:
         response_data = response.json()
-        print(response_data)
         return jsonify({'ok': '200', 'orderId': app_trans_id, 'payUrl': response_data.get('order_url')})
     else:
         return jsonify({'error': 'Invalid request method'}), 400
@@ -684,11 +692,21 @@ def callback():
             # thanh toán thành công
             # merchant cập nhật trạng thái cho đơn hàng
             dataJson = json.loads(cbdata['data'])
+            orderId = dataJson['app_trans_id']
             print("update order's status = success where apptransid = " + dataJson['app_trans_id'])
 
+            invoice = Invoice.query.filter_by(transaction_id=orderId).first()
+            if invoice:
+                # print(invoice.booking_form)
+                # room = Room.query.get_or_404(invoice.booking_form_id.room_id.id)
+                invoice.status = Status.SUCCESS
+                form = BookingForm.query.get(invoice.booking_form_id)
+                form.is_paid = True
+                # Cập nhật trạng thái phòng sau khi thanh toán thành công
+                # room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
+                db.session.commit()
             result['return_code'] = 1
             result['return_message'] = 'success'
-            dao.update_invoices(dataJson['app_trans_id'])
     except Exception as e:
         result['return_code'] = 0  # ZaloPay server sẽ callback lại (tối đa 3 lần)
         result['return_message'] = str(e)
@@ -707,6 +725,114 @@ def currency_filter(value):
     except (ValueError, TypeError):
         return value  # Nếu không phải kiểu số, trả lại giá trị gốc
 
+
+@app.route("/my-booking")
+def my_booking():
+    # print("methods:", payment_methods)
+    if current_user.is_authenticated:
+        client = dao.get_client_by_id(current_user.client_id)
+    else:
+        return redirect('/login')
+    booking_form = BookingForm.query.filter_by(client_id=client.client_id).order_by(BookingForm.id.desc()).first()
+    booking_forms = BookingForm.query.filter_by(client_id=client.client_id).order_by(BookingForm.id.desc()).all()
+    return render_template(
+        'payment.html',
+        booking_form=booking_form,
+        booking_forms=booking_forms
+    )
+
+@app.context_processor
+def common_attributes():
+    return {
+        'payment_methods': PaymentMethod.query.all(),
+    }
+
+
+#vnpay
+vnpay = Vnpay(
+    tmn_code=app.config.get("VNPAY_TMN_CODE"),
+    secret_key=app.config.get("VNPAY_HASH_SECRET_KEY"),
+    return_url=app.config.get("VNPAY_RETURN_URL"),
+    vnpay_payment_url=app.config.get("VNPAY_PAYMENT_URL"),
+    api_url=app.config.get("VNPAY_API_URL")
+)
+@app.route("/vnpay_payment", methods=["GET", "POST"])
+def vnpay_payment():
+    txn_ref = str((request.json.get('trans_id')))
+    amount = str(int((request.json.get('total'))) * 100)
+    try:
+        # Prepare VNPAY request data
+        req = {
+            "vnp_Version": "2.1.0",
+            "vnp_Command": "pay",
+            "vnp_TmnCode": app.config.get("VNPAY_TMN_CODE"),
+            "vnp_Amount": amount,  # Amount in VND multiplied by 100 (VNPAY format)
+            "vnp_CurrCode": "VND",
+            "vnp_TxnRef": txn_ref,  # Unique transaction reference
+            "vnp_OrderInfo": "Payment for order #123123",
+            "vnp_OrderType": "billpayment",
+            "vnp_Locale": "vn",
+            "vnp_BankCode": "NCB",
+            "vnp_CreateDate": datetime.now().strftime('%Y%m%d%H%M%S'),
+            "vnp_IpAddr": request.remote_addr,
+        }
+        # Add return URL
+        req['vnp_ReturnUrl'] = app.config.get("VNPAY_RETURN_URL")
+        # Get payment URL
+        payment_url = vnpay.get_payment_url(req)
+
+        # Redirect to VNPAY payment gateway
+        return jsonify({'ok': '200', 'orderId': txn_ref, 'payUrl': payment_url})
+
+    except Exception as e:
+        # Handle and log errors
+        app.logger.error(f"Error during VNPAY payment: {e}")
+        return jsonify({"error": "An error occurred while processing your payment request."}), 500
+
+
+@app.route("/vnpay_payment_return", methods=["GET"])
+def vnpay_payment_return():
+    try:
+        # Get response parameters
+        response_data = request.args.to_dict()
+
+        # Validate response
+        if vnpay.validate_response(response_data):
+            # Payment successful
+            vnp_TxnRef = response_data.get("vnp_TxnRef")
+            vnp_Amount = response_data.get("vnp_Amount")
+            vnp_ResponseCode = response_data.get("vnp_ResponseCode")
+
+            if vnp_ResponseCode == "00":  # Success code
+                invoice = Invoice.query.filter_by(transaction_id=vnp_TxnRef).first()
+                print(invoice)
+
+                if invoice:
+                    # print(invoice.booking_form)
+                    # room = Room.query.get_or_404(invoice.booking_form_id.room_id.id)
+                    invoice.status = Status.SUCCESS
+                    form = BookingForm.query.get(invoice.booking_form_id)
+                    form.is_paid = True
+                    # Cập nhật trạng thái phòng sau khi thanh toán thành công
+                    # room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
+                    db.session.commit()
+                app.logger.info(f"Payment success for transaction: {vnp_TxnRef}")
+                return "Payment successful!"
+            else:
+                # Handle specific error codes
+                app.logger.warning(f"Payment failed with response code: {vnp_ResponseCode}")
+                return f"Payment failed with response code: {vnp_ResponseCode}"
+
+
+        else:
+            # Invalid response
+            app.logger.error("VNPAY response validation failed.")
+            return "Invalid payment response received."
+
+    except Exception as e:
+        # Handle and log errors
+        app.logger.error(f"Error in VNPAY payment return: {e}")
+        return "An error occurred while processing the payment response.", 500
 
 if __name__ == "__main__":
     with app.app_context():

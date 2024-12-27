@@ -18,9 +18,16 @@ app.config["PAGE_SIZE"] = 2
 app.config["CLOUDINARY_CLOUD_NAME"] = "dj4slrwsl"
 app.config["CLOUDINARY_API_KEY"] = "179444416465962"
 app.config["CLOUDINARY_API_SECRET"] = "FQBLsNVEVMPyozMSHih0PzYVxn8"
-app.config["SERVER_URL"] = "https://3dff-113-180-221-214.ngrok-free.app"
+app.config["SERVER_URL"] = "https://5c2c-113-180-221-214.ngrok-free.app"
 app.config["MOMO_CREATE_URL"] = "https://test-payment.momo.vn/v2/gateway/api/create"
 app.config["ZALO_CREATE_URL"] = "https://sb-openapi.zalopay.vn/v2/create"
+
+app.config["VNPAY_RETURN_URL"] = 'https://5c2c-113-180-221-214.ngrok-free.app'
+app.config["VNPAY_PAYMENT_URL"] = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'
+app.config["VNPAY_API_URL"] = 'https://sandbox.vnpayment.vn/merchant_webapi/merchant.html'
+app.config["VNPAY_TMN_CODE"] = "VZ4440R9"
+app.config["VNPAY_HASH_SECRET_KEY"] = 'H5Q37GV5CM5MDPJNI7AE5LDUTQS607QB'
+
 
 db = SQLAlchemy(app)
 login = LoginManager(app)

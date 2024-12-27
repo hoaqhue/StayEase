@@ -32,6 +32,7 @@ class BookingForm(db.Model):
     check_in_date = Column(DateTime, nullable=False)
     check_out_date = Column(DateTime, nullable=False)
     is_checked_in = Column(Boolean, default=False)
+    is_paid = Column(Boolean, default=False)
     receipted_by = Column(Integer, ForeignKey('user.id'))
     client_id = Column(Integer, ForeignKey('client.client_id'), nullable=False)
     booking_room_details = db.relationship('BookingRoomDetails', back_populates='booking_form')
