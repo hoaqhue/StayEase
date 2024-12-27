@@ -1,0 +1,47 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Thanh toán{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4 text-primary">Thanh toán</h1>
+
+    <!-- Hiển thị thông tin tổng tiền cần thanh toán -->
+    <p class="text-center">Cảm ơn bạn đã đặt phòng tại khách sạn của chúng tôi</p>
+
+    <!-- Hiển thị danh sách các phiếu đặt phòng -->
+    <h2 class="text-center mt-4">Danh sách đặt phòng của bạn</h2>
+    {% for form in booking_forms %}
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Phiếu đặt phòng: {{ form.id }}</h5>
+            <p>Khách hàng: {{ form.client.full_name }}</p>
+            <p>Ngày nhận phòng: {{ form.check_in_date }}</p>
+            <p>Ngày trả phòng: {{ form.check_out_date }}</p>
+            <!-- Hiển thị tổng tiền -->
+            <p>
+                Tổng tiền:
+                {% if form.booking_room_details %}
+                {{ form.booking_room_details | sum(attribute='total') }} VND
+                {% else %}
+                Chưa có thông tin
+                {% endif %}
+            </p>
+
+            {% if not form.is_paid %}
+            <a href="{{ url_for('pay', form_id=form.id) }}" class="btn btn-success">
+                Thanh toán
+            </a>
+            {% else %}
+            <span class="badge bg-success">Đã thanh toán</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Nút quay về trang chủ -->
+    <div class="d-grid mt-3">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Quay về trang chủ</a>
+    </div>
+</div>
+{% endblock %}

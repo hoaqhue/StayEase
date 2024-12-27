@@ -2,6 +2,8 @@ from datetime import datetime
 
 from flask_login import UserMixin
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, Date, Enum, DateTime
+from sqlalchemy.orm import relationship, Relationship
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, Date
 from sqlalchemy.orm import relationship, Relationship, backref
 from hotelapp import app, db
 from enum import Enum as enum
@@ -22,6 +24,7 @@ class BookingForm(db.Model):
     client_id = Column(Integer, ForeignKey('client.client_id'), nullable=False)
     booking_room_details = db.relationship('BookingRoomDetails', back_populates='booking_form')
     client = db.relationship('Client', back_populates='booking_form')
+
 
     def __str__(self):
         return f"Booking Form {self.id}"
