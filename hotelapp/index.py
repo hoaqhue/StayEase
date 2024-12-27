@@ -407,7 +407,7 @@ def booking(room_id):
             total=0
             # Tính toán tổng giá trị dựa trên số lượng hành khách và loại khách
             if passengers_count == max_passenger:
-                total += room_price * (1 + client_types[1].coefficient)  # Tính giá với hệ số từ loại khách
+                total += room_price * (1 + 0.25)  # Tính giá với hệ số từ loại khách
             elif client_type_id == 2:
                 total += room_price * (1 + client_types[2].coefficient)  # Nếu là loại khách đặc biệt, áp dụng hệ số
             else:
