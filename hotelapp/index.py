@@ -22,7 +22,8 @@ from hotelapp import admin
 
 from hotelapp import app, dao, login, db, admin
 from hotelapp.decorators import loggedin
-from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, Invoice, RoomType, AdImage, \
+from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, Invoice, RoomType, \
+    AdImage, \
     ClientType
 from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, Invoice
 
@@ -36,7 +37,8 @@ def index():
     room_types = dao.get_room_types()
     today = datetime.now().date()
     next_28_day = (datetime.now() + timedelta(days=28)).date()
-    return render_template('index.html', ad_images=ad_images,room_types=room_types, today=today, next_28_day=next_28_day)
+    return render_template('index.html', ad_images=ad_images, room_types=room_types, today=today,
+                           next_28_day=next_28_day)
 
 
 @app.route('/login-admin', methods=['POST'])
@@ -213,7 +215,6 @@ def rooms():
     checkout = request.args.get('check_out_date')
     room_type_id = request.args.get('ticket_class', type=int)
 
-
     # Truy vấn danh sách phòng
     query = Room.query
 
@@ -372,13 +373,14 @@ def booking(room_id):
                 raise ValueError("Không đủ dữ liệu loại khách trong cơ sở dữ liệu.")
 
 
-            # Tính toán tổng giá trị dựa trên số lượng hành khách và loại khách
+             #Tính toán tổng giá trị dựa trên số lượng hành khách và loại khách
             if passengers_count == 3:
                 total = room_price * (1 + client_types[0].coefficient)  # Tính giá với hệ số từ loại khách
             elif client_type_id == 1:
                 total = room_price * (1 + client_types[1].coefficient)  # Nếu là loại khách đặc biệt, áp dụng hệ số
             else:
                 total = room_price  # Giá mặc định
+
 
             # Tạo đối tượng BookingRoomDetails
             booking_detail = BookingRoomDetails(
@@ -388,13 +390,19 @@ def booking(room_id):
                 total=total  # Gán giá trị tổng đã tính
             )
             db.session.add(booking_detail)
+            print(f"Total: {total}, Booking Form ID: {booking_form.id}")
 
             # Cập nhật trạng thái phòng
             room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
             db.session.commit()
 
-            return render_template('booking.html', room=room, success="Đặt phòng thành công!",
-                                   client_types=client_types, client=client)
+            # Sau khi đặt phòng thành công, render template payment.html
+            booking_forms = BookingForm.query.filter_by(client_id=client.client_id).order_by(BookingForm.id.desc()).all()
+            return render_template(
+                'payment.html',
+                booking_form=booking_form,
+                booking_forms=booking_forms
+            )
 
         except Exception as e:
             db.session.rollback()
@@ -402,8 +410,6 @@ def booking(room_id):
                                    client=client)
 
     return render_template('booking.html', room=room, client_types=client_types, client=client)
-
-
 
 
 @app.route("/forms")
@@ -426,8 +432,10 @@ def checkin(form_id):
     flash(f'Check-in thành công cho phiếu số {form_id}!', 'success')
     return redirect("/forms")
 
+
 @app.route('/test-thanh-toan-momo/<int:form_id>', methods=['GET', 'POST'])
 def pay(form_id):
+    print("Form ID received: ", form_id)  # Debug
     form = BookingForm.query.get_or_404(form_id)
 
     if not current_user.is_authenticated:
@@ -455,7 +463,6 @@ def pay(form_id):
     return redirect("/forms")
 
 
-
 @app.route('/api/momo-pay', methods=['POST'])
 def momo_pay():
     print(app.config.get("SERVER_URL"), app.config.get("MOMO_CREATE_URL"))
@@ -464,10 +471,11 @@ def momo_pay():
     accessKey = "F8BBA842ECF85"
     secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz"
     requestId = str(uuid.uuid4())
-    amount = str((request.json.get('total')))
+    amount = str(int((request.json.get('total'))))
     print(amount)
     orderId = str((request.json.get('trans_id')))
-    orderInfo = "pay with MoMo"
+    print(f"Received amount: {amount}, trans_id: {orderId}")
+    orderInfo = "Pay with MoMo"
     requestType = "captureWallet"
     extraData = ""
     redirectUrl = str(app.config.get("SERVER_URL"))
@@ -475,6 +483,9 @@ def momo_pay():
     rawSignature = "accessKey=" + accessKey + "&amount=" + amount + "&extraData=" + extraData + "&ipnUrl=" + ipnUrl + "&orderId=" + orderId + "&orderInfo=" + orderInfo + "&partnerCode=" + partnerCode + "&redirectUrl=" + redirectUrl + "&requestId=" + requestId + "&requestType=" + requestType
     h = hmac.new(bytes(secretKey, 'ascii'), bytes(rawSignature, 'ascii'), hashlib.sha256)
     signature = h.hexdigest()
+    print(f"Raw signature: {rawSignature}")
+    print(f"Generated signature: {signature}")
+
     data = {
         'partnerCode': partnerCode,
         'partnerName': "Stay Ease",
@@ -489,6 +500,21 @@ def momo_pay():
         'requestType': requestType,
         'signature': signature
     }
+    print(f"Payload: {data}")
+
+    # Gửi yêu cầu đến MoMo
+    response = requests.post(endpoint, json=data, headers={'Content-Type': 'application/json'})
+    if response.status_code == 200:
+        response_data = response.json()
+        print(f"MoMo response: {response_data}")
+        return jsonify({
+            'ok': '200',
+            'payUrl': response_data.get('payUrl'),
+            'orderId': response_data.get('orderId')
+        })
+    else:
+        print(f"MoMo response error: {response.status_code}, {response.text}")
+        return jsonify({'error': 'Error from MoMo', 'details': response.json()}), response.status_code
 
     data = json.dumps(data)
     print(data)
