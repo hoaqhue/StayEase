@@ -3,7 +3,7 @@ footer {
     position: relative;
     bottom: 0;
     width: 100%;
-    background: linear-gradient(135deg, #82c9ff, #6ec1e4, #f0f8ff);
+    background: #004e66;
     padding: 50px 20px;
     box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1);
     text-align: center;

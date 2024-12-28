@@ -527,7 +527,7 @@ def pay(form_id):
             "trans_id": trans_id
         })
         response.raise_for_status()  # Kiểm tra nếu có lỗi HTTP
-        # flash(f'Thanh toán thành công cho phiếu số {form_id}!', 'success')
+        flash(f'Thanh toán thành công cho phiếu số {form_id}!', 'success')
         return redirect(response.json().get("payUrl"))
 
     except requests.exceptions.RequestException as e:
@@ -573,6 +573,7 @@ def momo_pay():
     response = requests.post(endpoint, json=data, headers={'Content-Type': 'application/json'})
     if response.status_code == 200:
         response_data = response.json()
+        print(response_data)
         return jsonify({
             'ok': '200',
             'payUrl': response_data.get('payUrl'),
@@ -760,6 +761,7 @@ vnpay = Vnpay(
 def vnpay_payment():
     txn_ref = str((request.json.get('trans_id')))
     amount = str(int((request.json.get('total'))) * 100)
+    print("VNPAY: ", txn_ref)
     try:
         # Prepare VNPAY request data
         req = {
@@ -777,7 +779,7 @@ def vnpay_payment():
             "vnp_IpAddr": request.remote_addr,
         }
         # Add return URL
-        req['vnp_ReturnUrl'] = app.config.get("VNPAY_RETURN_URL")
+        req['vnp_ReturnUrl'] = app.config.get("SERVER_URL") + "/my-booking"
         # Get payment URL
         payment_url = vnpay.get_payment_url(req)
 
@@ -792,6 +794,7 @@ def vnpay_payment():
 
 @app.route("/vnpay_payment_return", methods=["GET"])
 def vnpay_payment_return():
+    print("callback called")
     try:
         # Get response parameters
         response_data = request.args.to_dict()
@@ -800,6 +803,7 @@ def vnpay_payment_return():
         if vnpay.validate_response(response_data):
             # Payment successful
             vnp_TxnRef = response_data.get("vnp_TxnRef")
+            print(vnp_TxnRef)
             vnp_Amount = response_data.get("vnp_Amount")
             vnp_ResponseCode = response_data.get("vnp_ResponseCode")
 
