@@ -401,40 +401,80 @@ def booking(room_id):
             room_price = float(room.room_type.price_million)  # Giá phòng phải là số thực
             passengers_count = int(passengers)  # Số lượng hành khách (kiểm tra chắc chắn có giá trị hợp lệ)
             client_type_id = int(client_type_id)  # ID loại khách
-            regulation = db.session.query(Regulation).filter_by(key="max_capacity_surcharge_percentage").first()
-            # Kiểm tra hệ số của các loại khách
-            total_days = db.session.query(
-                func.sum(func.datediff(BookingForm.check_out_date, BookingForm.check_in_date)).label("total_days")
-            ).scalar()
-            if len(client_types) < 2:
-                raise ValueError("Không đủ dữ liệu loại khách trong cơ sở dữ liệu.")
-            total=0
-            # Tính toán tổng giá trị dựa trên số lượng hành khách và loại khách
-            from decimal import Decimal
-
-            # Chuyển đổi room_price và các hệ số từ client_types về Decimal để tính toán chính xác
-            room_price_decimal = Decimal(room_price)  # Chuyển đổi room_price sang Decimal
-            regulation_value = Decimal(regulation.value)  # Chuyển regulation.value sang Decimal
-
-            # Tính toán với các trường hợp khác nhau
-            if passengers_count == max_passenger:
-                total += room_price_decimal * (1 + regulation_value) * Decimal(
-                    total_days)  # Tính giá với hệ số từ loại khách
-            elif client_type_id == 2 or  guest_client_type_id==2:
-                total += room_price_decimal * Decimal(client_types[2].coefficient) * Decimal(
-                    total_days)  # Nếu là loại khách đặc biệt
-            else:
-                total += room_price_decimal * Decimal(client_types[1].coefficient) * Decimal(total_days)  # Giá mặc định
-
             # Tạo đối tượng BookingRoomDetails
             booking_detail = BookingRoomDetails(
                 booking_form_id=booking_form.id,
                 room_id=room.id,
-                passengers=passengers_count,  # Số lượng hành khách đã chuyển thành int
-                total=total  # Gán giá trị tổng đã tính
+                passengers=passengers_count,  # Số lượng hành khách
+                total=0  # Giá trị ban đầu
             )
+
+
+            # Thêm đối tượng vào session
             db.session.add(booking_detail)
-            print(f"Total: {total}, Booking Form ID: {booking_form.id}")
+            db.session.commit()
+
+
+            regulation = db.session.query(Regulation).filter_by(key="max_capacity_surcharge_percentage").first()
+            # Kiểm tra hệ số của các loại khách
+            # Convert the string dates to datetime objects
+            check_in = datetime.strptime(checkin, '%Y-%m-%d')
+            check_out = datetime.strptime(checkout, '%Y-%m-%d')
+
+            # Calculate the difference between the two dates
+            difference = check_out - check_in
+
+            # Get the number of days
+            total_days = difference.days
+
+            if len(client_types) < 2:
+                raise ValueError("Không đủ dữ liệu loại khách trong cơ sở dữ liệu.")
+
+            # Tính toán tổng giá trị dựa trên số lượng hành khách và loại khách
+            from decimal import Decimal
+            # Using filter with positional arguments
+            # Query the BookingRoomDetails based on room_id
+            booking_details = db.session.query(BookingRoomDetails).filter_by(room_id=room.id).first()
+
+
+            # Extract booking_form_id safely
+            booking_form = booking_details.booking_form_id
+
+            # Query the Guest using the booking_form_id
+            guest = db.session.query(Guest).filter_by(booking_form_id=booking_form).first()
+
+
+            # Chuyển đổi room_price và các hệ số từ client_types về Decimal để tính toán chính xác
+            room_price_decimal = Decimal(room_price)  # Chuyển đổi room_price sang Decimal
+            regulation_value = Decimal(regulation.value)  # Chuyển regulation.value sang Decimal
+            total = 0
+            # Tính toán với các trường hợp khác nhau
+            if passengers_count == max_passenger:
+                total = room_price_decimal * (1 + regulation_value) * Decimal(
+                    total_days)  # Áp dụng phụ phí 25% khi số khách đạt tối đa
+
+            # Kiểm tra loại khách chính là người Việt (client_type_id == 1) hay người nước ngoài (client_type_id == 2)
+            if client_type_id == 1:  # Khách Việt
+                total = room_price_decimal * Decimal(client_types[0].coefficient) * Decimal(total_days)
+            elif client_type_id == 2:  # Khách nước ngoài
+                total = room_price_decimal * Decimal(client_types[1].coefficient) * Decimal(total_days)
+
+            # Kiểm tra nếu có khách phụ là người nước ngoài và áp dụng phụ phí thêm
+
+            if guest and guest.client_type_id == 2:  # Nếu khách phụ là người nước ngoài
+                total *= Decimal(client_types[1].coefficient)  # Áp dụng phụ phí 1.5 cho khách nước ngoài
+
+            print(f"Tổng giá: {total}")
+
+            # Cập nhật giá mới sau khi tạo
+            new_total =  total  # Hàm tính giá mới
+            booking_detail.total = new_total
+
+            # Commit lại để lưu thay đổi
+            db.session.commit()
+
+            db.session.add(booking_detail)
+
 
             # Cập nhật trạng thái phòng
             room.room_status_id = RoomStatus.query.filter_by(status="Vui lòng thanh toán").first().id
