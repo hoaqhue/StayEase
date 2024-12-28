@@ -752,7 +752,7 @@ def common_attributes():
 vnpay = Vnpay(
     tmn_code=app.config.get("VNPAY_TMN_CODE"),
     secret_key=app.config.get("VNPAY_HASH_SECRET_KEY"),
-    return_url=app.config.get("VNPAY_RETURN_URL"),
+    return_url=app.config.get("SERVER_URL"),
     vnpay_payment_url=app.config.get("VNPAY_PAYMENT_URL"),
     api_url=app.config.get("VNPAY_API_URL")
 )
