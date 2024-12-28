@@ -9,13 +9,13 @@ from os import error
 from time import time
 
 import requests
-from flask import Flask, render_template, request, redirect, make_response, flash, jsonify, url_for
+from flask import Flask, render_template, request, redirect, make_response, flash, jsonify, url_for, session
 from flask_login import login_user, logout_user, current_user
 import requests
 from flask import Flask, render_template, request, redirect, make_response, flash, jsonify, url_for
 from flask_login import login_user, logout_user, current_user
 from flask_bcrypt import Bcrypt
-from sqlalchemy import Integer
+from sqlalchemy import Integer, func
 from sqlalchemy.exc import IntegrityError, PendingRollbackError
 from sqlalchemy.testing.suite.test_reflection import users
 
@@ -25,7 +25,7 @@ from hotelapp import app, dao, login, db, admin
 from hotelapp.decorators import loggedin
 from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, Invoice, RoomType, \
     AdImage, \
-    ClientType, Guest
+    ClientType, Guest, Regulation
 
 # Khởi tạo Bcrypt
 bcrypt = Bcrypt(app)
@@ -37,7 +37,8 @@ def index():
     room_types = dao.get_room_types()
     max_passenger = 6
     today = datetime.now().date()
-    next_28_day = (datetime.now() + timedelta(days=28)).date()
+    regulation = db.session.query(Regulation).filter_by(key="max_booking_days").first()
+    next_28_day = (datetime.now() + timedelta(days=regulation.value)).date()
     return render_template('index.html', ad_images=ad_images, room_types=room_types, today=today,
                            next_28_day=next_28_day, max_passenger=max_passenger)
 
@@ -400,18 +401,30 @@ def booking(room_id):
             room_price = float(room.room_type.price_million)  # Giá phòng phải là số thực
             passengers_count = int(passengers)  # Số lượng hành khách (kiểm tra chắc chắn có giá trị hợp lệ)
             client_type_id = int(client_type_id)  # ID loại khách
-
+            regulation = db.session.query(Regulation).filter_by(key="max_capacity_surcharge_percentage").first()
             # Kiểm tra hệ số của các loại khách
+            total_days = db.session.query(
+                func.sum(func.datediff(BookingForm.check_out_date, BookingForm.check_in_date)).label("total_days")
+            ).scalar()
             if len(client_types) < 2:
                 raise ValueError("Không đủ dữ liệu loại khách trong cơ sở dữ liệu.")
             total=0
             # Tính toán tổng giá trị dựa trên số lượng hành khách và loại khách
+            from decimal import Decimal
+
+            # Chuyển đổi room_price và các hệ số từ client_types về Decimal để tính toán chính xác
+            room_price_decimal = Decimal(room_price)  # Chuyển đổi room_price sang Decimal
+            regulation_value = Decimal(regulation.value)  # Chuyển regulation.value sang Decimal
+
+            # Tính toán với các trường hợp khác nhau
             if passengers_count == max_passenger:
-                total += room_price * (1 + 0.25)  # Tính giá với hệ số từ loại khách
-            elif client_type_id == 2:
-                total += room_price * (1 + client_types[2].coefficient)  # Nếu là loại khách đặc biệt, áp dụng hệ số
+                total += room_price_decimal * (1 + regulation_value) * Decimal(
+                    total_days)  # Tính giá với hệ số từ loại khách
+            elif client_type_id == 2 or  guest_client_type_id==2:
+                total += room_price_decimal * Decimal(client_types[2].coefficient) * Decimal(
+                    total_days)  # Nếu là loại khách đặc biệt
             else:
-                total += room_price  # Giá mặc định
+                total += room_price_decimal * Decimal(client_types[1].coefficient) * Decimal(total_days)  # Giá mặc định
 
             # Tạo đối tượng BookingRoomDetails
             booking_detail = BookingRoomDetails(

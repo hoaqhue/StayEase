@@ -372,6 +372,18 @@ class UserView(AuthenticatedView):
     }
 
 
+
+class RegulationView(AuthenticatedView):
+    column_list = ['id', 'key', 'value', 'updated_by', 'updated_date']
+    column_searchable_list = ['key', 'value']
+    column_filters = ['key', 'value']
+    column_labels = {
+        'id': 'ID',
+        'key': 'Key',
+        'value': 'Value',
+        'updated_by': 'updated_by',
+        'updated_date': 'updated_date'
+    }
 class InvoiceView(AuthenticatedView):
     column_list = ['id', 'booking_form.client.full_name', 'payment_method.type',
                    'booking_form.booking_room_details.total', 'created_date', 'status']
@@ -393,6 +405,7 @@ admin = Admin(app, name="Quản Lý Khách Sạn", template_mode="bootstrap4")
 # Thêm các view với tên và endpoint rõ ràng
 admin.add_view(UserView(User, db.session, name="Tài Khoản", endpoint="user_view"))
 admin.add_view(RoomView(Room, db.session, name="Phòng", endpoint="room_view"))
+admin.add_view(RegulationView(Regulation, db.session, name="Quy định", endpoint="regulation_view"))
 
 admin.add_view(RoomTypeView(RoomType, db.session, name="Loại Phòng", endpoint="room_type_view"))
 admin.add_view(ClientView(Client, db.session, name="Khách Hàng", endpoint="client_view"))
