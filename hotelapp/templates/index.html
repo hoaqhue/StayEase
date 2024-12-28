@@ -42,7 +42,7 @@
             </div>
 
         </div>
-        <form method="GET" action="{{ url_for('rooms') }}">
+        <form method="GET" action="{{ url_for('search_rooms') }}">
             <input type="hidden" name="check_in_date"
                    value="{{ request.args.get('check_in_date', '') }}">
             <input type="hidden" name="check_out_date"

@@ -55,6 +55,7 @@ def seed_data():
         room_statuses = [
             RoomStatus(status="Có sẵn"),
             RoomStatus(status="Bảo trì"),
+            RoomStatus(status="Vui lòng thanh toán")
         ]
         db.session.add_all(room_statuses)
         db.session.commit()

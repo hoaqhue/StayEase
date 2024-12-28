@@ -477,7 +477,7 @@ def booking(room_id):
 
 
             # Cập nhật trạng thái phòng
-            room.room_status_id = RoomStatus.query.filter_by(status="Vui lòng thanh toán").first()
+            room.room_status_id = RoomStatus.query.filter_by(status="Vui lòng thanh toán").first().id
             db.session.commit()
 
             # Sau khi đặt phòng thành công, render template payment.html
@@ -683,7 +683,7 @@ def momo_ipn():
             form.is_paid = True
 
             # Cập nhật trạng thái phòng sau khi thanh toán thành công
-            room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first()
+            room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
             db.session.commit()
 
         return jsonify({'status': 200})  # Thanh toán thành công và trạng thái phòng đã được cập nhật
@@ -767,7 +767,7 @@ def callback():
                 form = BookingForm.query.get(invoice.booking_form_id)
                 form.is_paid = True
                 # Cập nhật trạng thái phòng sau khi thanh toán thành công
-                room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first()
+                room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
                 db.session.commit()
             result['return_code'] = 1
             result['return_message'] = 'success'
@@ -881,7 +881,7 @@ def vnpay_payment_return():
                     form = BookingForm.query.get(invoice.booking_form_id)
                     form.is_paid = True
                     # Cập nhật trạng thái phòng sau khi thanh toán thành công
-                    room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first()
+                    room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
                     db.session.commit()
                 app.logger.info(f"Payment success for transaction: {vnp_TxnRef}")
                 return "Payment successful!"

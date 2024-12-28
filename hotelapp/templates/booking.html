@@ -64,13 +64,13 @@
         <div class="mb-3">
             <label for="check_in_date" class="form-label">Ngày nhận phòng:</label>
             <input type="date" id="check_in_date" name="check_in_date" class="form-control"
-                   value="{{ request.args.get('check_in_date', '') }}" required readonly>
+                   value="{{ request.args.get('check_in_date', '') }}" required >
         </div>
 
         <div class="mb-3">
             <label for="check_out_date" class="form-label">Ngày trả phòng:</label>
             <input type="date" id="check_out_date" name="check_out_date" class="form-control"
-                   value="{{ request.args.get('check_out_date', '') }}" required readonly>
+                   value="{{ request.args.get('check_out_date', '') }}" required >
         </div>
 
         <!-- Nút gửi form -->
