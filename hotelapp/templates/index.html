@@ -7,7 +7,8 @@
 <!-- Thanh tìm kiếm cố định -->
 <div class="text-center shadow rounded fixed-search">
     <h1 class="text-primary">Tìm phòng</h1>
-    <form method="post" action="/search_rooms" class="p-2" id="searchForm">
+
+    <form method="GET" action="{{ url_for('rooms') }}" class="p-2" id="searchForm">
         <div class="row align-items-center">
             <div class="col col-md-2 col-3">
                 <label>Ngày nhận phòng:</label>
