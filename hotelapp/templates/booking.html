@@ -60,21 +60,18 @@
         </div>
         <!-- Các trường thông tin cho khách hàng phụ -->
         <div id="additional-guests"></div>
-        <!-- Ngày nhận phòng -->
+        <!-- Thông tin đặt phòng -->
         <div class="mb-3">
             <label for="check_in_date" class="form-label">Ngày nhận phòng:</label>
             <input type="date" id="check_in_date" name="check_in_date" class="form-control"
-                   required min="{{ today }}" max="{{ max_check_in | default('') }}" value="{{ today }}"
-                   onchange="updateCheckoutMinDate()">
+                   value="{{ request.args.get('check_in_date', '') }}" required readonly>
         </div>
 
-        <!-- Ngày trả phòng -->
         <div class="mb-3">
             <label for="check_out_date" class="form-label">Ngày trả phòng:</label>
             <input type="date" id="check_out_date" name="check_out_date" class="form-control"
-                   required min="{{ today }}" max="{{ max_check_out | default('') }}" value="{{ today }}">
+                   value="{{ request.args.get('check_out_date', '') }}" required readonly>
         </div>
-
 
         <!-- Nút gửi form -->
         <div class="d-grid">

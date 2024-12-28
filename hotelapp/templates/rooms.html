@@ -11,12 +11,12 @@
             <div class="col-md-3">
                 <label for="check_in_date" class="form-label">Ngày nhận:</label>
                 <input type="date" class="form-control" id="check_in_date" name="check_in_date"
-                       required min="{{today}}" max="{{ next_28_day }}" onchange="updateCheckoutMinDate()">
+                       required min="{{today}}" max="{{ next_28_day }}" value="{{ request.args.get('check_in_date', '') }}" onchange="updateCheckoutMinDate()">
             </div>
             <div class="col-md-3">
                 <label for="check_out_date" class="form-label">Ngày trả:</label>
                 <input type="date" class="form-control" id="check_out_date"
-                       name="check_out_date" required min="{{today}}">
+                       name="check_out_date" value="{{ request.args.get('check_out_date', '') }}" required min="{{today}}">
             </div>
             <div class="col-md-3">
                 <label for="ticket_class" class="form-label">Loại phòng:</label>
@@ -90,8 +90,13 @@
                     </p>
                     <div class="d-grid">
                         {% if room.room_status and room.room_status.status == 'Có sẵn' %}
-                        <a href="{{ url_for('booking', room_id=room.id) }}"
-                           class="btn btn-success rounded-pill shadow-sm">Đặt ngay</a>
+                         <form method="GET" action="{{ url_for('booking', room_id=room.id) }}">
+                            <input type="hidden" name="check_in_date"
+                                   value="{{ request.args.get('check_in_date', '') }}">
+                            <input type="hidden" name="check_out_date"
+                                   value="{{ request.args.get('check_out_date', '') }}">
+                            <button type="submit" class="btn btn-success w-100">Đặt ngay</button>
+                        </form>
                         {% elif room.room_status and room.room_status.status == 'Vui lòng thanh toán' %}
                         <a href="{{ url_for('booking_success') }}"
                            class="btn btn-success rounded-pill shadow-sm">Thanh Toán</a>

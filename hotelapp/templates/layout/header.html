@@ -8,14 +8,17 @@
             <ul class="navbar-nav me-auto">
                 <a class="nav-link" href="/">Trang chủ</a>
                 {% if current_user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="/rooms">Danh sách phòng</a>
-                    </li>
-                    {% if current_user.user_role.type == "Receptionist" %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="/forms">Lập phiếu</a>
-                        </li>
-                    {% endif %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/rooms">Danh sách phòng</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/my-booking">Phòng đã đặt</a>
+                </li>
+                {% if current_user.user_role.type == "Receptionist" %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/forms">Lập phiếu</a>
+                </li>
+                {% endif %}
                 {% endif %}
             </ul>
             <ul class="navbar-nav ms-auto">

@@ -5,7 +5,7 @@
 {% block content %}
 
 <!-- Thanh tìm kiếm cố định -->
-<div class="text-center shadow rounded fixed-search" >
+<div class="text-center shadow rounded fixed-search">
     <h1 class="text-primary">Tìm phòng</h1>
     <form method="post" action="/search_rooms" class="p-2" id="searchForm">
         <div class="row align-items-center">
@@ -37,10 +37,19 @@
                 <label>Số lượng khách</label>
             </div>
             <div class="col col-md-4 col-9">
-                <input type="number" class="form-control" value=0 min="0"  max="{{max_passenger}}" step="1" name="passengers">
+                <input type="number" class="form-control" value=0 min="0" max="{{max_passenger}}" step="1"
+                       name="passengers">
             </div>
+
         </div>
-        <input type="submit" value="Tra cứu" class="btn btn-success mt-2">
+        <form method="GET" action="{{ url_for('rooms') }}">
+            <input type="hidden" name="check_in_date"
+                   value="{{ request.args.get('check_in_date', '') }}">
+            <input type="hidden" name="check_out_date"
+                   value="{{ request.args.get('check_out_date', '') }}">
+            <input type="submit" value="Tra cứu" class="btn btn-success mt-2">
+        </form>
+
     </form>
 </div>
 
@@ -70,7 +79,8 @@
 <div class="container-fluid p-0 mt-4">
     <div style="width: 100%; height: 65vh; position: relative; background-color: #000; overflow: hidden; border-radius: 10px;">
         <!-- Video (ẩn ban đầu) -->
-        <iframe id="video1" width="100%" height="100%" src="https://www.youtube.com/embed/Yo5heY2UiWU?si=lDY_-r-J4oYdC2S_"
+        <iframe id="video1" width="100%" height="100%"
+                src="https://www.youtube.com/embed/Yo5heY2UiWU?si=lDY_-r-J4oYdC2S_"
                 title="YouTube video player" frameborder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 referrerpolicy="strict-origin-when-cross-origin" allowfullscreen
@@ -91,7 +101,8 @@
     <div class="text-center mt-2"
          style="padding: 15px; background-color: #f8f9fa; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
         <h2 style="font-size: 24px; font-weight: bold; color: #333;">Trải nghiệm dịch vụ bữa tối hoàn hảo</h2>
-        <p style="font-size: 16px; color: #666;">Khám phá các gói dịch vụ ăn uống sang trọng với giá ưu đãi và dịch vụ tận tình. Chỉ vài cú nhấp chuột, kỳ nghỉ mơ ước sẽ trong tầm tay bạn.</p>
+        <p style="font-size: 16px; color: #666;">Khám phá các gói dịch vụ ăn uống sang trọng với giá ưu đãi và dịch vụ
+            tận tình. Chỉ vài cú nhấp chuột, kỳ nghỉ mơ ước sẽ trong tầm tay bạn.</p>
     </div>
 </div>
 <div class="container-fluid p-0 mt-4">
@@ -99,11 +110,13 @@
     <div class="text-center mt-2"
          style="padding: 15px; background-color: #f8f9fa; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
         <h2 style="font-size: 24px; font-weight: bold; color: #333;">Trải nghiệm dịch vụ lễ cưới hoàn hảo</h2>
-        <p style="font-size: 16px; color: #666;">Khám phá các gói dịch vụ tiệc cưới sang trọng với giá ưu đãi và dịch vụ tận tình. Chỉ vài cú nhấp chuột, kỷ niệm đầy mơ ước sẽ trong tầm tay bạn.</p>
+        <p style="font-size: 16px; color: #666;">Khám phá các gói dịch vụ tiệc cưới sang trọng với giá ưu đãi và dịch vụ
+            tận tình. Chỉ vài cú nhấp chuột, kỷ niệm đầy mơ ước sẽ trong tầm tay bạn.</p>
     </div>
     <div style="width: 100%; height: 65vh; position: relative; background-color: #000; overflow: hidden; border-radius: 10px;">
         <!-- Video (ẩn ban đầu) -->
-        <iframe id="video2" width="100%" height="100%" src="https://www.youtube.com/embed/zkHeWTr9xq8?si=NRdX7hYJbGdBAQ81"
+        <iframe id="video2" width="100%" height="100%"
+                src="https://www.youtube.com/embed/zkHeWTr9xq8?si=NRdX7hYJbGdBAQ81"
                 title="YouTube video player" frameborder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 referrerpolicy="strict-origin-when-cross-origin" allowfullscreen
@@ -120,10 +133,6 @@
         </div>
     </div>
 </div>
-
-
-
-
 
 
 {% endblock %}

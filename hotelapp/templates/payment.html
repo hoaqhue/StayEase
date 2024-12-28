@@ -18,7 +18,6 @@
             <p>Khách hàng: {{ form.client.full_name }}</p>
             <p>Ngày nhận phòng: {{ form.check_in_date }}</p>
             <p>Ngày trả phòng: {{ form.check_out_date }}</p>
-            <!-- Hiển thị tổng tiền -->
             <p>
                 Tổng tiền:
                 {% if form.booking_room_details %}
@@ -29,9 +28,26 @@
             </p>
 
             {% if not form.is_paid %}
-            <a href="{{ url_for('pay', form_id=form.id) }}" class="btn btn-success">
-                Thanh toán
-            </a>
+            <form method="POST" action="{{ url_for('pay', form_id=form.id) }}">
+                <!-- Phương thức thanh toán -->
+                <div class="mb-3">
+                    <label for="payment_method" class="form-label">Chọn phương thức thanh toán:</label>
+                    <select name="payment_method_id" id="payment_method" class="form-select" required>
+                        <option value="" disabled selected>Chọn phương thức</option>
+                        {% for method in payment_methods %}
+                        <option value="{{ method.id }}" {% if method.type=='Tiền Mặt' and current_user.user_role.type == 'Guest' %}disabled{% endif %}>
+                        {{ method.type }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+
+                <!-- Nút thanh toán -->
+                <button type="submit" class="btn btn-success">
+                    Thanh toán
+                </button>
+            </form>
             {% else %}
             <span class="badge bg-success">Đã thanh toán</span>
             {% endif %}

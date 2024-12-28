@@ -55,8 +55,6 @@ def seed_data():
         room_statuses = [
             RoomStatus(status="Có sẵn"),
             RoomStatus(status="Bảo trì"),
-            RoomStatus(status="Đã đặt"),
-            RoomStatus(status='Vui lòng thanh toán')
         ]
         db.session.add_all(room_statuses)
         db.session.commit()
@@ -78,15 +76,16 @@ def seed_data():
             UserRole(type="Receptionist"),
             UserRole(type="Guest"),
         ]
+
         db.session.add_all(user_roles)
         db.session.commit()
 
 
         payment_methods = [
-            PaymentMethod(type="Thẻ tín dụng"),
-            PaymentMethod(type="Tiền mặt"),
-            PaymentMethod(type="Chuyển khoản ngân hàng"),
-            PaymentMethod(type="Ví điện tử"),
+            PaymentMethod(type="MomoPay"),
+            PaymentMethod(type="ZaloPay"),
+            PaymentMethod(type="VNPay"),
+            PaymentMethod(type="Tiền Mặt"),
         ]
         db.session.add_all(payment_methods)
         db.session.commit()
