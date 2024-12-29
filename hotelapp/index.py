@@ -34,7 +34,7 @@ bcrypt = Bcrypt(app)
 
 @app.route('/')
 def index():
-    ad_images = AdImage.query.all()
+    ad_images = AdImage.query.limit(5).all()  # Chỉ tải 5 ảnh ban đầu
     room_types = dao.get_room_types()
     max_passenger = 6
     today = datetime.now().date()
@@ -42,6 +42,17 @@ def index():
     next_28_day = (datetime.now() + timedelta(days=regulation.value)).date()
     return render_template('index.html', ad_images=ad_images, room_types=room_types, today=today,
                            next_28_day=next_28_day, max_passenger=max_passenger)
+
+
+@app.route('/api/load-content', methods=['GET'])
+def load_content():
+    offset = int(request.args.get('offset', 0))
+    limit = int(request.args.get('limit', 5))
+
+    ads = AdImage.query.offset(offset).limit(limit).all()
+    ads_data = [{"url": ad.url, "alt": ad.alt_text} for ad in ads]
+
+    return jsonify(ads_data)
 
 
 @app.route('/login-admin', methods=['POST'])
@@ -221,6 +232,7 @@ def search_rooms():
 @app.route('/rooms')
 def rooms():
     dao.update_room_status(datetime.now())
+
     # Lấy danh sách loại phòng để hiển thị trong dropdown
     room_types = RoomType.query.all()
 
@@ -229,6 +241,10 @@ def rooms():
     checkout = request.args.get('check_out_date')
     room_type_id = request.args.get('ticket_class', type=int)
 
+    # Lấy số trang và kích thước trang từ query string (mặc định page=1, per_page=10)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+
     # Truy vấn danh sách phòng
     query = Room.query
 
@@ -236,6 +252,7 @@ def rooms():
     if room_type_id:
         query = query.filter(Room.room_type_id == room_type_id)
 
+    # Lọc theo ngày nhận và trả phòng
     if checkin and checkout:
         try:
             checkin_date = datetime.strptime(checkin, '%Y-%m-%d')
@@ -252,8 +269,10 @@ def rooms():
             query = query.filter(~Room.id.in_(booking_subquery))
         except ValueError:
             return "Invalid date format", 400
-    # Lấy danh sách phòng sau khi áp dụng bộ lọc
-    rooms = query.all()
+
+    # Áp dụng phân trang
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    rooms = pagination.items
 
     # Truyền dữ liệu sang template
     return render_template(
@@ -262,7 +281,8 @@ def rooms():
         room_types=room_types,
         checkin=checkin,
         checkout=checkout,
-        selected_room_type=room_type_id
+        selected_room_type=room_type_id,
+        pagination=pagination
     )
 
 
@@ -409,11 +429,9 @@ def booking(room_id):
                 total=0  # Giá trị ban đầu
             )
 
-
             # Thêm đối tượng vào session
             db.session.add(booking_detail)
             db.session.commit()
-
 
             regulation = db.session.query(Regulation).filter_by(key="max_capacity_surcharge_percentage").first()
             # Kiểm tra hệ số của các loại khách
@@ -436,13 +454,11 @@ def booking(room_id):
             # Query the BookingRoomDetails based on room_id
             booking_details = db.session.query(BookingRoomDetails).filter_by(room_id=room.id).first()
 
-
             # Extract booking_form_id safely
             booking_form = booking_details.booking_form_id
 
             # Query the Guest using the booking_form_id
             guest = db.session.query(Guest).filter_by(booking_form_id=booking_form).first()
-
 
             # Chuyển đổi room_price và các hệ số từ client_types về Decimal để tính toán chính xác
             room_price_decimal = Decimal(room_price)  # Chuyển đổi room_price sang Decimal
@@ -467,14 +483,13 @@ def booking(room_id):
             print(f"Tổng giá: {total}")
 
             # Cập nhật giá mới sau khi tạo
-            new_total =  total  # Hàm tính giá mới
+            new_total = total  # Hàm tính giá mới
             booking_detail.total = new_total
 
             # Commit lại để lưu thay đổi
             db.session.commit()
 
             db.session.add(booking_detail)
-
 
             # Cập nhật trạng thái phòng
             room.room_status_id = RoomStatus.query.filter_by(status="Vui lòng thanh toán").first().id
@@ -589,7 +604,6 @@ def pay(form_id):
 
 @app.route('/api/momo-pay', methods=['POST'])
 def momo_pay():
-
     endpoint = app.config.get("MOMO_CREATE_URL")
     partnerCode = "MOMO"
     accessKey = "F8BBA842ECF85"
@@ -609,7 +623,6 @@ def momo_pay():
     h = hmac.new(bytes(secretKey, 'ascii'), bytes(rawSignature, 'ascii'), hashlib.sha256)
     signature = h.hexdigest()
 
-
     data = {
         'partnerCode': partnerCode,
         'partnerName': "Stay Ease",
@@ -624,7 +637,6 @@ def momo_pay():
         'requestType': requestType,
         'signature': signature
     }
-
 
     # Gửi yêu cầu đến MoMo
     response = requests.post(endpoint, json=data, headers={'Content-Type': 'application/json'})
@@ -790,6 +802,7 @@ def currency_filter(value):
     except (ValueError, TypeError):
         return value  # Nếu không phải kiểu số, trả lại giá trị gốc
 
+
 @app.route("/my-booking")
 def my_booking():
     # print("methods:", payment_methods)
@@ -805,6 +818,7 @@ def my_booking():
         booking_forms=booking_forms
     )
 
+
 @app.context_processor
 def common_attributes():
     return {
@@ -812,7 +826,7 @@ def common_attributes():
     }
 
 
-#vnpay
+# vnpay
 vnpay = Vnpay(
     tmn_code=app.config.get("VNPAY_TMN_CODE"),
     secret_key=app.config.get("VNPAY_HASH_SECRET_KEY"),
@@ -820,6 +834,8 @@ vnpay = Vnpay(
     vnpay_payment_url=app.config.get("VNPAY_PAYMENT_URL"),
     api_url=app.config.get("VNPAY_API_URL")
 )
+
+
 @app.route("/vnpay_payment", methods=["GET", "POST"])
 def vnpay_payment():
     txn_ref = str((request.json.get('trans_id')))

@@ -118,5 +118,36 @@
         </div>
         {% endfor %}
     </div>
+    <!-- Điều hướng phân trang -->
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if pagination.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ pagination.prev_num }}&per_page={{ pagination.per_page }}&check_in_date={{ check_in_date }}&check_out_date={{ check_out_date }}&ticket_class={{ selected_room_type }}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for page in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                {% if page %}
+                    <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="?page={{ page }}&per_page={{ pagination.per_page }}&check_in_date={{ check_in_date }}&check_out_date={{ check_out_date }}&ticket_class={{ selected_room_type }}">{{ page }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if pagination.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ pagination.next_num }}&per_page={{ pagination.per_page }}&check_in_date={{ check_in_date }}&check_out_date={{ check_out_date }}&ticket_class={{ selected_room_type }}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
 </div>
+
 {% endblock %}
