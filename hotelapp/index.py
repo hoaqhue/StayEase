@@ -243,7 +243,7 @@ def rooms():
 
     # Lấy số trang và kích thước trang từ query string (mặc định page=1, per_page=10)
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 10, type=int)
+    per_page = request.args.get('per_page', 9, type=int)
 
     # Truy vấn danh sách phòng
     query = Room.query
