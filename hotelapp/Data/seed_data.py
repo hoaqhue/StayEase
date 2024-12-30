@@ -43,9 +43,9 @@ def seed_data():
         # Tạo loại phòng
         room_types = [
             RoomType(type="Deluxe", price_million=1000000,max_passenger=3),  # Deluxe Room
-            RoomType(type="Standard", price_million=800000,max_passenger=4),  # Standard Room
-            RoomType(type="Suite Family", price_million=1500000,max_passenger=5),  # Family Suite
-            RoomType(type="Presidential", price_million=3000000,max_passenger=6),  # Presidential Suite
+            RoomType(type="Standard", price_million=800000,max_passenger=3),  # Standard Room
+            RoomType(type="Suite Family", price_million=1500000,max_passenger=3),  # Family Suite
+            RoomType(type="Presidential", price_million=3000000,max_passenger=3),  # Presidential Suite
         ]
 
         db.session.add_all(room_types)
