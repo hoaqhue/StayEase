@@ -229,9 +229,12 @@ class RevenueReportView(BaseView):
                 BookingRoomDetails, BookingRoomDetails.room_id== Room.id
             ).join(
                 BookingForm, BookingForm.id == BookingRoomDetails.booking_form_id
+            ).join(
+                Invoice, Invoice.booking_form_id == BookingForm.id
             ).filter(
                 BookingForm.check_in_date >= datetime(year, month, 1),
-                BookingForm.check_out_date < datetime(next_month_year, next_month, 1)
+                BookingForm.check_out_date < datetime(next_month_year, next_month, 1),
+                Invoice.status=='SUCCESS'
             ).group_by(RoomType.id).all()
 
             # Kiểm tra và xử lý kết quả truy vấn
@@ -287,10 +290,12 @@ class RoomUsageReportView(BaseView):
                 BookingRoomDetails, BookingRoomDetails.room_id == Room.id
             ).join(
                 BookingForm, BookingForm.id == BookingRoomDetails.booking_form_id
+            ).join(
+                Invoice, Invoice.booking_form_id == BookingForm.id
             ).filter(
                 start_date <= BookingForm.check_in_date,
-                BookingForm.check_out_date < next_month_date
-
+                BookingForm.check_out_date < next_month_date,
+                Invoice.status == 'SUCCESS'
             ).group_by(
                 Room.id
             ).all()
