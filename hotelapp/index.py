@@ -599,28 +599,34 @@ def pay(form_id):
 
         # Nếu phương thức thanh toán là "Tiền Mặt" và người dùng là lễ tân
     if payment_method.type == 'Tiền Mặt' and current_user.user_role.type == 'Receptionist':
-        # Đánh dấu hóa đơn đã thanh toán
-        invoice = dao.create_invoice(form_id, payment_method.id, trans_id="CASH")
-        form.is_paid = True  # Đánh dấu phiếu đặt phòng đã được thanh toán
-        db.session.commit()
+        try:
+            # Đánh dấu hóa đơn đã thanh toán
+            invoice = dao.create_invoice(form_id, payment_method.id, trans_id="CASH")
+            invoice.status = Status.SUCCESS
+            form.is_paid = True  # Đánh dấu phiếu đặt phòng đã được thanh toán
+            db.session.commit()
 
-        # Cập nhật trạng thái phòng (nếu cần)
-        if form.booking_room_details:  # Kiểm tra chi tiết phòng
-            room = Room.query.filter_by(id=form.booking_room_details[0].room_id).first()
-            if room:
-                room_status = RoomStatus.query.filter_by(status="Đã thanh toán").first()
-                if not room_status:
-                    # Nếu trạng thái "Đã thanh toán" không tồn tại, thêm vào cơ sở dữ liệu
-                    room_status = RoomStatus(status="Đã thanh toán")
-                    db.session.add(room_status)
+            # Cập nhật trạng thái phòng (nếu cần)
+            if form.booking_room_details:  # Kiểm tra chi tiết phòng
+                room = Room.query.filter_by(id=form.booking_room_details[0].room_id).first()
+                if room:
+                    room_status = RoomStatus.query.filter_by(status="Đã thanh toán").first()
+                    if not room_status:
+                        # Nếu trạng thái "Đã thanh toán" không tồn tại, thêm vào cơ sở dữ liệu
+                        room_status = RoomStatus(status="Đã thanh toán")
+                        db.session.add(room_status)
+                        db.session.commit()
+
+                    room.room_status_id = room_status.id
                     db.session.commit()
 
-                room.room_status_id = room_status.id
-                db.session.commit()
+                    # Hiển thị thông báo thành công
+            flash(f'Thanh toán thành công cho phiếu số {form_id}!', 'success')
+            return redirect(url_for('my_booking'))  # Chuyển hướng về trang "my_booking"
 
-        # Hiển thị thông báo thành công và chuyển hướng về trang chủ
-        flash(f'Thanh toán thành công cho phiếu số {form_id}!', 'success')
-        return redirect("/forms")
+        except requests.exceptions.RequestException as e:
+                flash(f'Lỗi thanh toán: {e}', 'danger')
+
 
     # Các phương thức thanh toán khác (MomoPay, ZaloPay, VNPay, v.v.)
     trans_id = ""
