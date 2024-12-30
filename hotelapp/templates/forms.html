@@ -5,6 +5,15 @@
 <div class="container mt-5">
     <h1 class="text-center mb-4 text-primary">Danh sách phiếu thuê</h1>
 
+    <!-- Form tìm kiếm -->
+    <form method="get" action="{{ url_for('forms') }}" class="mb-4">
+        <div class="input-group">
+            <input type="text" class="form-control" name="search" placeholder="Tìm theo tên khách hàng"
+                   value="{{ request.args.get('search', '') }}">
+            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+        </div>
+    </form>
+     {% if forms %}
     <div class="row g-4"> <!-- G-4 tạo khoảng cách giữa các card -->
         {% for form in forms %}
         <div class="col-lg-4 col-md-6 col-sm-12">
@@ -27,5 +36,8 @@
         </div>
         {% endfor %}
     </div>
+    {% else %}
+    <p class="text-center text-muted">Không tìm thấy kết quả nào.</p>
+    {% endif %}
 </div>
 {% endblock %}

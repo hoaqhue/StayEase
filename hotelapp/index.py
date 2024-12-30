@@ -516,7 +516,17 @@ def booking(room_id):
 
 @app.route("/forms")
 def forms():
-    forms = dao.get_forms()
+    # Lấy từ khóa tìm kiếm từ query string
+    search_query = request.args.get('search', '').strip()
+
+    # Nếu có từ khóa tìm kiếm, lọc theo tên khách hàng
+    if search_query:
+        forms = db.session.query(BookingForm).join(Client).filter(
+            Client.full_name.ilike(f'%{search_query}%')  # Tìm kiếm không phân biệt chữ hoa/thường
+        ).all()
+    else:
+        # Nếu không có từ khóa, hiển thị tất cả phiếu thuê
+        forms = dao.get_forms()
     return render_template("forms.html", forms=forms)
 
 
