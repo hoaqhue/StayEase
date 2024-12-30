@@ -1,0 +1,54 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Chi tiết đặt phòng{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center text-primary">Chi tiết đặt phòng</h1>
+
+    <div class="card shadow-sm mt-4">
+        <div class="card-body">
+            <h3 class="card-title">Phiếu đặt phòng: {{ form.id }}</h3>
+            <p><strong>Khách đặt:</strong> {{ form.client.full_name }}</p>
+            <p><strong>Ngày nhận phòng:</strong> {{ form.check_in_date }}</p>
+            <p><strong>Ngày trả phòng:</strong> {{ form.check_out_date }}</p>
+        </div>
+    </div>
+
+    <h3 class="mt-4">Khách ở cùng</h3>
+    {% if guests %}
+        <ul class="list-group">
+            {% for guest in guests %}
+                <div class="list-group-item">
+                  <p><strong>Tên:</strong> {{ guest.full_name }}</p>
+                  <p><strong>Số điện thoại:</strong> {{ guest.phone_number }}</p>
+                  <p><strong>CCCD:</strong> {{ guest.identification_code }}</p>
+                </div>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Không có khách ở cùng.</p>
+    {% endif %}
+
+    <h3 class="mt-4">Phòng đã đặt</h3>
+    {% if booking_rooms %}
+        <ul class="list-group">
+            {% for room in booking_rooms %}
+                <div class="list-group-item">
+                  <p><strong>Phòng:</strong> {{ room.room.name }}</p>
+                  <p><strong>Loại phòng:</strong> {{ room.room.room_type.type }}</p>
+                  <p><strong>Giá tiền:</strong> {{ room.total | currency }}</p>
+                </div>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Không có thông tin phòng.</p>
+    {% endif %}
+
+    <h3 class="mt-4 text-danger">Tổng giá tiền: {{ total_price | currency }}</h3>
+
+    <div class="mt-4">
+        <a href="{{ url_for('forms') }}" class="btn btn-secondary">Quay lại danh sách phiếu</a>
+    </div>
+</div>
+{% endblock %}

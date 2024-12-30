@@ -100,6 +100,8 @@ def get_forms():
     return BookingForm.query.filter_by(is_checked_in = False).all()
 
 def create_invoice(form_id, payment_method, trans_id):
+    if not trans_id:
+        trans_id = "CASH"  # Giá trị mặc định cho tiền mặt
     print("form id: ", form_id)
     total = 0
     for form_details in BookingRoomDetails.query.filter_by(booking_form_id=form_id).all():

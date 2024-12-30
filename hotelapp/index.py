@@ -542,6 +542,31 @@ def booking_success():
     )
 
 
+
+@app.route('/booking-details/<int:form_id>')
+def booking_details(form_id):
+    # Lấy thông tin phiếu đặt phòng
+    form = BookingForm.query.get_or_404(form_id)
+
+    # Lấy danh sách khách ở cùng từ bảng Guest
+    guests = Guest.query.filter_by(booking_form_id=form_id).all()
+
+    # Lấy thông tin các phòng đặt
+    booking_rooms = BookingRoomDetails.query.filter_by(booking_form_id=form_id).all()
+
+    # Tính tổng giá tiền
+    total_price = sum([room.total for room in booking_rooms])
+
+    return render_template(
+        'booking_details.html',
+        form=form,
+        guests=guests,
+        booking_rooms=booking_rooms,
+        total_price=total_price
+    )
+
+
+
 @app.route('/checkin/<int:form_id>', methods=['GET', 'POST'])
 def checkin(form_id):
     form = BookingForm.query.get_or_404(form_id)
@@ -571,6 +596,33 @@ def pay(form_id):
     if not payment_method:
         flash("Phương thức thanh toán không hợp lệ.", "danger")
         return redirect('/my-booking')
+
+        # Nếu phương thức thanh toán là "Tiền Mặt" và người dùng là lễ tân
+    if payment_method.type == 'Tiền Mặt' and current_user.user_role.type == 'Receptionist':
+        # Đánh dấu hóa đơn đã thanh toán
+        invoice = dao.create_invoice(form_id, payment_method.id, trans_id="CASH")
+        form.is_paid = True  # Đánh dấu phiếu đặt phòng đã được thanh toán
+        db.session.commit()
+
+        # Cập nhật trạng thái phòng (nếu cần)
+        if form.booking_room_details:  # Kiểm tra chi tiết phòng
+            room = Room.query.filter_by(id=form.booking_room_details[0].room_id).first()
+            if room:
+                room_status = RoomStatus.query.filter_by(status="Đã thanh toán").first()
+                if not room_status:
+                    # Nếu trạng thái "Đã thanh toán" không tồn tại, thêm vào cơ sở dữ liệu
+                    room_status = RoomStatus(status="Đã thanh toán")
+                    db.session.add(room_status)
+                    db.session.commit()
+
+                room.room_status_id = room_status.id
+                db.session.commit()
+
+        # Hiển thị thông báo thành công và chuyển hướng về trang chủ
+        flash(f'Thanh toán thành công cho phiếu số {form_id}!', 'success')
+        return redirect("/forms")
+
+    # Các phương thức thanh toán khác (MomoPay, ZaloPay, VNPay, v.v.)
     trans_id = ""
 
     api_url = ""
