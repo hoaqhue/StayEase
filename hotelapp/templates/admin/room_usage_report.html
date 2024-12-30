@@ -3,12 +3,13 @@
 {% block body %}
 <h2>Thống kê Mật độ Sử dụng Phòng Tháng {{ month }}</h2>
 <div align="right">
-    <form >
-    <label for="month">Chọn Tháng:</label>
-    <input type="month" id="month" name="month" value="{{ month }}">
-    <button type="submit">Lọc</button>
-</form>
+    <form>
+        <label for="month">Chọn Tháng:</label>
+        <input type="month" id="month" name="month" value="{{ month }}">
+        <button type="submit">Lọc</button>
+    </form>
 </div>
+
 <table class="table table-striped">
     <thead>
         <tr>
@@ -33,18 +34,20 @@
         </tr>
     </tbody>
 </table>
+
 <div style="max-width: 400px; margin: 20px auto;">
-<!-- Canvas cho biểu đồ -->
-<canvas id="roomUsageChart"></canvas>
+    <!-- Canvas cho biểu đồ -->
+    <canvas id="roomUsageChart"></canvas>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // Lấy context của canvas
     var ctx = document.getElementById('roomUsageChart').getContext('2d');
 
     // Dữ liệu cho biểu đồ
-    var labels = [{% for row in data %}'{{ row.room.name }}',{% endfor %}];
-    var rentedDays = [{% for row in data %}{{ row.rented_days }},{% endfor %}];
+    var labels = [{% for row in data %}'{{ row.room }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+    var rentedDays = [{% for row in data %}{{ row.rented_days }}{% if not loop.last %}, {% endif %}{% endfor %}];
 
     // Tạo biểu đồ
     var roomUsageChart = new Chart(ctx, {
