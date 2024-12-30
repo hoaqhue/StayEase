@@ -9,24 +9,18 @@
     <h1 class="text-primary">Tìm phòng</h1>
 
     <form method="GET" action="{{ url_for('rooms') }}" class="p-2" id="searchForm">
-        <div class="row align-items-center">
-            <div class="col col-md-2 col-3">
-                <label>Ngày nhận phòng:</label>
-            </div>
-            <div class="col col-md-4 col-9 mb-2">
+        <div class="row align-items-center g-3">
+            <div class="col-md-4">
+                <label class="form-label text-start d-block">Ngày nhận phòng:</label>
                 <input type="date" class="form-control" id="check_in_date" name="check_in_date" required
                        max="{{ next_28_day }}" onchange="updateCheckoutMinDate()">
             </div>
-            <div class="col col-md-2 col-3">
-                <label>Ngày trả phòng:</label>
-            </div>
-            <div class="col col-md-4 col-9 mb-2">
+            <div class="col-md-4">
+                <label class="form-label text-start d-block">Ngày trả phòng:</label>
                 <input type="date" class="form-control" id="check_out_date" name="check_out_date" required min=""/>
             </div>
-            <div class="col col-md-2 col-3">
-                <label>Loại phòng:</label>
-            </div>
-            <div class="col col-md-4 col-9 mb-2">
+            <div class="col-md-4">
+                <label class="form-label text-start d-block">Loại phòng:</label>
                 <select class="form-select" aria-label="Default select example" name="ticket_class">
                     <option value="" selected disabled>Loại phòng</option>
                     {% for i in room_types %}
@@ -34,14 +28,6 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col col-md-2 col-3">
-                <label>Số lượng khách</label>
-            </div>
-            <div class="col col-md-4 col-9">
-                <input type="number" class="form-control" value=0 min="0" max="{{max_passenger}}" step="1"
-                       name="passengers">
-            </div>
-
         </div>
         <form method="GET" action="{{ url_for('search_rooms') }}">
             <input type="hidden" name="check_in_date"
