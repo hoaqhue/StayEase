@@ -36,7 +36,7 @@ bcrypt = Bcrypt(app)
 def index():
     ad_images = AdImage.query.limit(5).all()  # Chỉ tải 5 ảnh ban đầu
     room_types = dao.get_room_types()
-    max_passenger = 6
+    max_passenger = 3
     today = datetime.now().date()
     regulation = db.session.query(Regulation).filter_by(key="max_booking_days").first()
     next_28_day = (datetime.now() + timedelta(days=regulation.value)).date()
@@ -293,8 +293,9 @@ from flask_login import current_user
 def booking(room_id):
     room = Room.query.get_or_404(room_id)
     client_types = dao.get_client_types()
-    max_passenger = room.room_type.max_passenger
 
+    regulation = db.session.query(Regulation).filter_by(key="max_persons_per_room").first()
+    max_passenger = regulation.value
     # Kiểm tra người dùng đã đăng nhập chưa
     if current_user.is_authenticated:
         # Nếu người dùng đã đăng nhập, lấy thông tin client từ current_user
