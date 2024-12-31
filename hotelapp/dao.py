@@ -73,6 +73,9 @@ def get_client_by_id(client_id):
 def get_client_by_identification_code(identification_code):
     return Client.query.filter_by(identification_code=identification_code).first()
 
+def get_regulation_by_key(key):
+    return Regulation.query.filter_by(key=key).first()
+
 def update_room_status(checkin):
     # Lấy các booking đã hết hạn (ngày trả phòng nhỏ hơn ngày check-in)
     expired_bookings = BookingForm.query.filter(BookingForm.check_out_date < checkin).all()
@@ -94,7 +97,11 @@ def update_room_status(checkin):
 def get_client_by_email(email):
     return Client.query.filter_by(email=email).first()
 
+def get_client_type_by_id(id):
+    return ClientType.query.get(id)
 
+def get_client_type_by_type(type):
+    return ClientType.query.filter_by(type=type).first()
 
 def get_forms():
     return BookingForm.query.filter_by(is_checked_in = False).all()
@@ -116,6 +123,18 @@ def create_invoice(form_id, payment_method, trans_id):
     db.session.add(invoice)
     db.session.commit()
     return invoice
+
+def get_clients_of_booking_form(booking_form_id):
+    with app.app_context():
+        clients = db.session.query(Client).join(
+            ClientRoomDetails, Client.client_id == ClientRoomDetails.client_id
+        ).join(
+            BookingRoomDetails, BookingRoomDetails.id == ClientRoomDetails.booking_details_id
+        ).filter(
+            BookingRoomDetails.booking_form_id == booking_form_id
+        ).all()
+
+        return clients
 
 if __name__ == "__main__":
     with app.app_context():

@@ -52,9 +52,11 @@ class BookingRoomDetails(db.Model):
     total = Column(Float, default=0)
     booking_form_id = Column(Integer, ForeignKey('booking_form.id'), nullable=True)
     room_id = Column(Integer, ForeignKey('room.id'), nullable=True)
-    room = db.relationship('Room', lazy=True, backref='booking_form_details')
+    room = db.relationship('Room', lazy=True, backref='booking_room_details')
     passengers = Column(Integer, nullable=False, default=1)
     booking_form = db.relationship('BookingForm', back_populates='booking_room_details')
+
+    client_room_details=db.relationship('ClientRoomDetails', backref="booking_room_detals")
 
     def __str__(self):
         return f"Booking Room Details {self.id}"
@@ -63,9 +65,9 @@ class BookingRoomDetails(db.Model):
 class Client(db.Model):
     client_id = Column(Integer, primary_key=True, autoincrement=True)
     full_name = Column(String(50), nullable=False)
-    identification_code = Column(String(20), nullable=False, unique=True)
+    identification_code = Column(String(20), nullable=False)
     address = Column(String(50), nullable=True)
-    phone_number = Column(String(50), nullable=True, unique=True)
+    phone_number = Column(String(50), nullable=True)
     email = Column(String(50), nullable=True)
     client_type_id = Column(Integer, ForeignKey('client_type.id'), nullable=True)
     booking_form = db.relationship("BookingForm", back_populates="client")
@@ -78,8 +80,7 @@ class Client(db.Model):
 class ClientType(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     type = Column(String(20), nullable=False)
-    coefficient = Column(Float, default=0)
-    room_id = db.Column(db.Integer, db.ForeignKey('room.id'))
+    coefficient = Column(Float, default=1)
 
     def __str__(self):
         return f"{self.type}: {self.coefficient}"  # Combine type and coefficient in a readable format
@@ -188,6 +189,8 @@ class ClientRoomDetails(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     client_id = Column(Integer, ForeignKey('client.client_id'), nullable=True)
     booking_details_id = Column(Integer, ForeignKey('booking_room_details.id'), nullable=True)
+
+    client = db.relationship("Client", backref="client_room_details")
 
     def __str__(self):
         return f"Client Room Details {self.id}"

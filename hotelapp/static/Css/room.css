@@ -2,7 +2,23 @@
 * {
     box-sizing: border-box;
 }
-
+#openDrawerButton {
+    width: 3.5rem;
+    height: 3.5rem;
+    bottom: 1rem;
+    right: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    z-index: 1050; /* Đảm bảo nút nằm trên các nội dung khác */
+}
+#roomToast {
+    background-color: #17a2b8;
+}
+#selectedRoomsDrawer {
+    z-index: 1051;
+}
 /* Cấu hình grid cho các phòng */
 .rooms {
     display: grid;

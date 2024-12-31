@@ -1,0 +1,95 @@
+{% extends 'layout/base.html' %}
+{% block title %}Chi Tiết Đặt Phòng{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4 text-primary">Chi Tiết Đặt Phòng</h1>
+
+    <!-- Thông tin người đặt -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Thông Tin Người Đặt</div>
+        <div class="card-body">
+            <p><strong>Tên:</strong> {{ booking_form.client.full_name }}</p>
+            <p><strong>CMND/CCCD:</strong> {{ booking_form.client.identification_code }}</p>
+            <p><strong>Địa Chỉ:</strong> {{ booking_form.client.address }}</p>
+            <p><strong>Ngày Nhận Phòng:</strong> {{ booking_form.check_in_date.strftime('%d/%m/%Y') }}</p>
+            <p><strong>Ngày Trả Phòng:</strong> {{ booking_form.check_out_date.strftime('%d/%m/%Y') }}</p>
+        </div>
+    </div>
+
+    <!-- Danh sách khách phụ theo phòng -->
+    <h2 class="text-center mb-4 text-secondary">Danh Sách Phòng & Khách Phụ</h2>
+    {% for detail in booking_room_details %}
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">Phòng: {{ detail.room.name }}</div>
+        <div class="card-body">
+            <p><strong>Số lượng khách:</strong> {{ detail.passengers }}</p>
+            <p><strong>Giá cơ bản:</strong> {{ "{:,.0f}".format(detail.room.room_type.price_million) }} VND</p>
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Họ và Tên</th>
+                    <th>CMND/CCCD</th>
+                    <th>Loại Khách</th>
+                    <th>Địa Chỉ</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for client_room in detail.client_room_details %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ client_room.client.full_name }}</td>
+                    <td>{{ client_room.client.identification_code }}</td>
+                    <td>{{ client_room.client.client_type.type }}</td>
+                    <td>{{ client_room.client.address }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <p><strong>Phụ Thu:</strong></p>
+            <ul>
+                {% if detail.is_reach_max_capacity %}
+                <li>Phụ thu vượt công suất: {{ "{:,.0f}".format(detail.room.room_type.price_million *
+                    max_capacity_surcharge_percentage) }} VND
+                </li>
+                {% endif %}
+                {% if detail.is_foreigner_present %}
+                <li>Phụ thu khách nước ngoài: {{ "{:,.0f}".format(detail.room.room_type.price_million *
+                    foreigner_coefficient - detail.room.room_type.price_million) }} VND
+                </li>
+                {% endif %}
+            </ul>
+            <p><strong>Tổng cộng:</strong> {{ "{:,.0f}".format(detail.total) }} VND</p>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Tổng tiền -->
+    <div class="card mt-4">
+        <div class="card-header bg-success text-white">Tổng Thanh Toán</div>
+        <div class="card-body">
+            <h3 class="text-center text-danger">{{ "{:,.0f}".format(total) }} VND</h3>
+        </div>
+    </div>
+
+    <!-- Lựa chọn phương thức thanh toán -->
+    <div class="card mt-4">
+        <div class="card-header bg-info text-white">Chọn Phương Thức Thanh Toán</div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('pay') }}">
+                <input type="hidden" name="form_id" value="{{ booking_form.id }}">
+                <div class="mb-3">
+                    <label for="payment_method" class="form-label">Phương Thức Thanh Toán:</label>
+                    <select class="form-select" id="payment_method" name="payment_method" required>
+                        {% for method in payment_methods %}
+                        <option value="{{ method.id }}">{{ method.type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Xác Nhận Thanh Toán</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

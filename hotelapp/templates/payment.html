@@ -28,11 +28,12 @@
             </p>
 
             {% if not form.is_paid %}
-            <form method="POST" action="{{ url_for('pay', form_id=form.id) }}">
+            <form method="POST" action="{{ url_for('pay') }}">
+                <input type="hidden" name="form_id" value="{{ form.id }}">
                 <!-- Phương thức thanh toán -->
                 <div class="mb-3">
                     <label for="payment_method" class="form-label">Chọn phương thức thanh toán:</label>
-                    <select name="payment_method_id" id="payment_method" class="form-select" required>
+                    <select name="payment_method" id="payment_method" class="form-select" required>
                         <option value="" disabled selected>Chọn phương thức</option>
                         {% for method in payment_methods %}
                         <option value="{{ method.id }}" {% if method.type=='Tiền Mặt' and current_user.user_role.type == 'Guest' %}disabled{% endif %}>

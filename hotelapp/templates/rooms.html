@@ -4,6 +4,35 @@
 {% block content %}
 <div class="container mt-5">
     <h1 class="text-center mb-4 text-primary">Danh sách phòng</h1>
+    <!-- Nút mở Drawer -->
+    <button type="button" class="cart-btn rounded-circle shadow-sm position-fixed" id="openDrawerButton"
+            data-bs-toggle="offcanvas" data-bs-target="#selectedRoomsDrawer" aria-controls="selectedRoomsDrawer">
+        <svg width="64px" height="64px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+                <path d="M6.29977 5H21L19 12H7.37671M20 16H8L6 3H3M9 20C9 20.5523 8.55228 21 8 21C7.44772 21 7 20.5523 7 20C7 19.4477 7.44772 19 8 19C8.55228 19 9 19.4477 9 20ZM20 20C20 20.5523 19.5523 21 19 21C18.4477 21 18 20.5523 18 20C18 19.4477 18.4477 19 19 19C19.5523 19 20 19.4477 20 20Z"
+                      stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </g>
+        </svg>
+        <span id="badgeCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+              style="display: none;">
+        0
+    </span>
+    </button>
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
+        <div id="roomToast" class="toast align-items-center text-white border-0" role="alert"
+             aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    Phòng đã được thêm vào giỏ hàng!
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                        aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Form lọc tìm kiếm -->
     <form method="GET" action="{{ url_for('rooms') }}" class="mb-5">
@@ -11,12 +40,14 @@
             <div class="col-md-3">
                 <label for="check_in_date" class="form-label">Ngày nhận:</label>
                 <input type="date" class="form-control" id="check_in_date" name="check_in_date"
-                       required min="{{today}}" max="{{ next_28_day }}" value="{{ request.args.get('check_in_date', '') }}" onchange="updateCheckoutMinDate()">
+                       required min="{{today}}" max="{{ next_28_day }}"
+                       value="{{ request.args.get('check_in_date', '') }}" onchange="updateCheckoutMinDate()">
             </div>
             <div class="col-md-3">
                 <label for="check_out_date" class="form-label">Ngày trả:</label>
                 <input type="date" class="form-control" id="check_out_date"
-                       name="check_out_date" value="{{ request.args.get('check_out_date', '') }}" required min="{{today}}">
+                       name="check_out_date" value="{{ request.args.get('check_out_date', '') }}" required
+                       min="{{today}}">
             </div>
             <div class="col-md-3">
                 <label for="ticket_class" class="form-label">Loại phòng:</label>
@@ -35,88 +66,109 @@
         </div>
     </form>
 
-    <!-- Danh sách phòng -->
-    <div class="row g-4">
-        {% for room in rooms %}
-        <div class="col-md-4">
-            <div class="card shadow-lg border-0 rounded-3 overflow-hidden">
-                <!-- Hình ảnh phòng -->
-                <div id="carousel-{{ room.id }}" class="carousel slide" data-bs-ride="carousel">
-                    <div class="carousel-inner">
-                        {% if room.images %}
-                        {% for image in room.images %}
-                        <div class="carousel-item {% if loop.first %}active{% endif %}">
-                            <img src="{{ image.url }}" class="d-block w-100"
-                                 alt="Hình ảnh phòng {{ room.name }}"
-                                 style="height: 200px; object-fit: cover;" loading="lazy">
+    <!-- Form chọn nhiều phòng -->
+    <form method="POST" action="{{ url_for('confirm_booking') }}">
+        <!-- Lặp qua danh sách phòng -->
+        <div class="row g-4">
+            {% for room in rooms %}
+            {% if room.room_status.status != "Bảo trì" %}
+            <div class="col-md-4">
+                <div class="card shadow-lg border-0 rounded-3 overflow-hidden">
+                    <!-- Phần hiển thị hình ảnh phòng -->
+                    <div id="carousel-{{ room.id }}" class="carousel slide" data-bs-ride="carousel">
+                        <div class="carousel-inner">
+                            {% if room.images %}
+                            {% for image in room.images %}
+                            <div class="carousel-item {% if loop.first %}active{% endif %}">
+                                <img src="{{ image.url }}" class="d-block w-100"
+                                     alt="Hình ảnh phòng {{ room.name }}"
+                                     style="height: 200px; object-fit: cover;" loading="lazy">
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="carousel-item active">
+                                <img src="/static/default-room.jpg" class="d-block w-100"
+                                     alt="Hình ảnh mặc định"
+                                     style="height: 200px; object-fit: cover;" loading="lazy">
+                            </div>
+                            {% endif %}
                         </div>
-                        {% endfor %}
-                        {% else %}
-                        <div class="carousel-item active">
-                            <img src="/static/default-room.jpg" class="d-block w-100"
-                                 alt="Hình ảnh mặc định"
-                                 style="height: 200px; object-fit: cover;" loading="lazy">
-                        </div>
+                        {% if room.images|length > 1 %}
+                        <button class="carousel-control-prev" type="button" data-bs-target="#carousel-{{ room.id }}"
+                                data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#carousel-{{ room.id }}"
+                                data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        </button>
                         {% endif %}
                     </div>
-                    {% if room.images|length > 1 %}
-                    <button class="carousel-control-prev" type="button" data-bs-target="#carousel-{{ room.id }}"
-                            data-bs-slide="prev">
-                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                    </button>
-                    <button class="carousel-control-next" type="button" data-bs-target="#carousel-{{ room.id }}"
-                            data-bs-slide="next">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                    </button>
-                    {% endif %}
-                </div>
 
-                <!-- Nội dung chi tiết -->
-                <div class="card-body text-center">
-                    <h5 class="card-title text-uppercase fw-bold">{{ room.name }}</h5>
-                    <p class="card-text">
-                        <strong>Trạng Thái:</strong> {{ room.room_status.status or 'Không xác định' }}
-                    </p>
-                    <p class="card-text">
-                        <strong>Loại Phòng:</strong> {{ room.room_type.type or 'Không xác định' }}
-                    </p>
-                    <p class="card-text text-muted">
-                        {{ room.description or 'Mô tả không có sẵn.' }}
-                    </p>
-                    <p class="card-text">
-                        <strong>Giá:</strong>
-                        {{ "{:,.0f}".format(room.room_type.price_million) if room.room_type.price_million else 'N/A' }}
-                        VND
-                    </p>
-                    <div class="d-grid">
-                        {% if room.room_status and room.room_status.status == 'Có sẵn' %}
-                         <form method="GET" action="{{ url_for('booking', room_id=room.id) }}">
-                            <input type="hidden" name="check_in_date"
-                                   value="{{ request.args.get('check_in_date', '') }}">
-                            <input type="hidden" name="check_out_date"
-                                   value="{{ request.args.get('check_out_date', '') }}">
-                            <button type="submit" class="btn btn-success w-100">Đặt ngay</button>
-                        </form>
-                        {% elif room.room_status and room.room_status.status == 'Vui lòng thanh toán' %}
-                        <a href="{{ url_for('booking_success') }}"
-                           class="btn btn-success rounded-pill shadow-sm">Thanh Toán</a>
-
-                        {% else %}
-                        <button class="btn btn-secondary rounded-pill shadow-sm" disabled>Không khả dụng</button>
-                        {% endif %}
-
+                    <!-- Nội dung phòng -->
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-uppercase fw-bold">{{ room.name }}</h5>
+                        <p class="card-text">
+                            <strong>Trạng Thái:</strong> {{ room.room_status.status or 'Không xác định' }}
+                        </p>
+                        <p class="card-text">
+                            <strong>Loại Phòng:</strong> {{ room.room_type.type or 'Không xác định' }}
+                        </p>
+                        <p class="card-text room-price">
+                            <strong>Giá:</strong>
+                            {{ "{:,.0f}".format(room.room_type.price_million) if room.room_type.price_million else 'N/A'
+                            }}
+                            VND
+                        </p>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="room-{{ room.id }}"
+                                   name="selected_rooms"
+                                   value="{{ room.id }}" id="room-{{ room.id }}">
+                            <label class="form-check-label" for="room-{{ room.id }}">
+                                Chọn phòng
+                            </label>
+                        </div>
                     </div>
-
                 </div>
             </div>
-        </div>
-        {% else %}
-        <div class="col-12">
-            <div class="alert alert-warning text-center">
-                Không có phòng phù hợp với yêu cầu của bạn.
+            {% endif %}
+            {% else %}
+            <div class="col-12">
+                <div class="alert alert-warning text-center">
+                    Không có phòng phù hợp với yêu cầu của bạn.
+                </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
+
+        <!-- Nút gửi dữ liệu -->
+        <!--        <div class="text-center mt-4">-->
+        <!--            <input type="hidden" name="check_in_date" value="{{ request.args.get('check_in_date', '') }}">-->
+        <!--            <input type="hidden" name="check_out_date" value="{{ request.args.get('check_out_date', '') }}">-->
+        <!--            <button type="submit" class="btn btn-primary w-100 rounded-pill shadow-sm">Xác nhận đặt phòng</button>-->
+        <!--        </div>-->
+    </form>
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="selectedRoomsDrawer"
+         aria-labelledby="selectedRoomsDrawerLabel">
+        <div class="offcanvas-header">
+            <h5 id="selectedRoomsDrawerLabel" class="text-primary">Danh sách phòng đã chọn</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <ul id="selectedRoomsList" class="list-group mb-3">
+                <!-- Danh sách phòng được chọn -->
+            </ul>
+            <div class="d-flex justify-content-between align-items-center">
+                <strong>Tổng cộng (dự kiến):</strong>
+                <span id="totalPrice">0 VND</span>
+            </div>
+            <form method="POST" action="{{ url_for('confirm_booking') }}" class="mt-4">
+                <input type="hidden" name="selected_rooms" id="hiddenSelectedRooms">
+                <input type="hidden" name="check_in_date" value="{{ request.args.get('check_in_date', '') }}">
+                <input type="hidden" name="check_out_date" value="{{ request.args.get('check_out_date', '') }}">
+                <button type="submit" class="btn btn-primary w-100 rounded-pill shadow-sm">Xác nhận đặt phòng</button>
+            </form>
+        </div>
     </div>
     <!-- Điều hướng phân trang -->
     <nav class="mt-4">
@@ -149,5 +201,73 @@
         </ul>
     </nav>
 </div>
+<script>
+    const checkboxes = document.querySelectorAll('.form-check-input');
+const selectedRoomsList = document.getElementById('selectedRoomsList');
+const totalPriceElement = document.getElementById('totalPrice');
+const hiddenSelectedRooms = document.getElementById('hiddenSelectedRooms');
+const badgeCount = document.getElementById('badgeCount');
+const toastElement = document.getElementById('roomToast');
+const toast = new bootstrap.Toast(toastElement);
+
+let selectedRooms = [];
+let totalPrice = 0;
+
+function updateBadgeCount() {
+    const count = selectedRooms.length;
+    if (count > 0) {
+        badgeCount.style.display = 'inline';
+        badgeCount.textContent = count;
+    } else {
+        badgeCount.style.display = 'none';
+    }
+}
+
+checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', function () {
+        const roomName = this.closest('.card').querySelector('.card-title').textContent.trim();
+        const priceText = this.closest('.card').querySelector('.room-price').textContent;
+        const roomPrice = parseFloat(priceText.split(':')[1].replace(/,/g, '').replace('VND', '').trim());
+        console.log(priceText)
+        if (this.checked) {
+            selectedRooms.push({ id: this.value, name: roomName, price: roomPrice });
+            toast.show();
+        } else {
+            selectedRooms = selectedRooms.filter(room => room.id !== this.value);
+        }
+
+        updateSelectedRoomsList();
+        updateBadgeCount();
+    });
+});
+
+function updateSelectedRoomsList() {
+    selectedRoomsList.innerHTML = '';
+    totalPrice = 0;
+
+    selectedRooms.forEach(room => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+        li.textContent = room.name;
+
+        const span = document.createElement('span');
+        span.textContent = `${room.price.toLocaleString()} VND`;
+        li.appendChild(span);
+
+        selectedRoomsList.appendChild(li);
+        totalPrice += room.price;
+    });
+
+    totalPriceElement.textContent = `${totalPrice.toLocaleString()} VND`;
+    hiddenSelectedRooms.value = selectedRooms.map(room => room.id).join(',');
+    console.log(hiddenSelectedRooms.value)
+}
+
+document.getElementById('openDrawerButton').addEventListener('click', () => {
+    updateSelectedRoomsList(); // Đồng bộ khi mở Drawer
+});
+
+</script>
+
 
 {% endblock %}

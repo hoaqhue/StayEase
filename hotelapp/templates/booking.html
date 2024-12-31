@@ -5,78 +5,32 @@
 {% block content %}
 <div class="container mt-5">
     <h1 class="text-center mb-4 text-primary">Đặt phòng khách sạn</h1>
+    <form method="POST" action="{{ url_for('booking') }}" class="shadow p-4 bg-light rounded">
+        <h3>Thông tin phòng</h3>
+        {% for room in rooms %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Phòng: {{ room.name }}</h5>
+                <p>Loại phòng: {{ room.room_type.type }}</p>
+                <p>Giá: {{ room.room_type.price_million }} VND/đêm</p>
 
-    <form method="POST" action="{{ url_for('booking', room_id=room.id) }}" class="shadow p-4 bg-light rounded">
-        <!-- Tên khách hàng -->
-        <div class="mb-3">
-            <label for="full_name" class="form-label">Tên khách hàng:</label>
-            <input type="text" id="full_name" name="full_name" class="form-control" required
-                   placeholder="Nhập tên khách hàng" value="{{ client.full_name if client else '' }}">
-        </div>
+                <div class="mb-3">
+                    <label for="passengers-{{ room.id }}" class="form-label">Số lượng khách:</label>
+                    <input type="number" class="form-control" id="passengers-{{ room.id }}" name="passengers-{{ room.id }}" min="1" max="{{ room.room_type.max_passenger }}" required>
+                </div>
 
-        <!-- Số điện thoại -->
-        <div class="mb-3">
-            <label for="phone_number" class="form-label">Số điện thoại:</label>
-            <input type="tel" id="phone_number" name="phone_number" class="form-control" required
-                   placeholder="Nhập số điện thoại" pattern="[0-9]{10}" title="Nhập 10 chữ số"
-                   value="{{ client.phone_number if client else '' }}">
+                <h6>Thông tin khách</h6>
+                <div id="guest-info-{{ room.id }}">
+                    <!-- Thông tin khách sẽ được thêm vào bằng JavaScript khi chọn số lượng khách -->
+                </div>
+            </div>
         </div>
+        <input type="hidden" name="selected_rooms" value="{{ room.id }}">
+        {% endfor %}
 
-        <!-- Email -->
-        <div class="mb-3">
-            <label for="email" class="form-label">Email:</label>
-            <input type="email" id="email" name="email" class="form-control" required
-                   placeholder="Nhập email" value="{{ client.email if client else '' }}">
-        </div>
-
-        <!-- CCCD -->
-        <div class="mb-3">
-            <label for="identification_code" class="form-label">CCCD:</label>
-            <input type="text" id="identification_code" name="identification_code" class="form-control" required
-                   placeholder="Nhập CCCD" pattern="[0-9]{12}" title="Nhập 12 chữ số"
-                   value="{{ client.identification_code if client else '' }}">
-        </div>
-
-        <!-- Loại khách -->
-        <div class="mb-3">
-            <label for="client_type_id" class="form-label">Loại khách:</label>
-            <select id="client_type_id" name="client_type_id" class="form-select" required>
-                <option value="" disabled selected>Chọn loại khách</option>
-                {% for client_type in client_types %}
-                <option value="{{ client_type.id }}"
-                        {% if client and client.client_type_id== client_type.id %}selected{% endif %}>
-                    {{ client_type.type }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <!-- Số lượng khách -->
-        <div class="mb-3">
-            <label for="passengers" class="form-label">Số lượng khách:</label>
-            <input type="number" id="passengers" name="passengers" class="form-control" required
-                   placeholder="Nhập số lượng khách" min="1" max="{{max_passenger}}" value="1"
-                   onchange="updateGuestFields()">
-        </div>
-        <!-- Các trường thông tin cho khách hàng phụ -->
-        <div id="additional-guests"></div>
-        <!-- Thông tin đặt phòng -->
-        <div class="mb-3">
-            <label for="check_in_date" class="form-label">Ngày nhận phòng:</label>
-            <input type="date" id="check_in_date" name="check_in_date" class="form-control"
-                   value="{{ request.args.get('check_in_date', '') }}" min="{{today}}" max="{{ next_28_day }}" onchange="updateCheckoutMinDate()" required >
-        </div>
-
-        <div class="mb-3">
-            <label for="check_out_date" class="form-label">Ngày trả phòng:</label>
-            <input type="date" id="check_out_date" name="check_out_date" class="form-control"
-                   value="{{ request.args.get('check_out_date', '') }}" min="{{today}}" required >
-        </div>
-
-        <!-- Nút gửi form -->
-        <div class="d-grid">
-            <button type="submit" class="btn btn-primary">Đặt phòng</button>
-        </div>
+        <input type="hidden" name="check_in_date" value="{{ check_in_date }}">
+        <input type="hidden" name="check_out_date" value="{{ check_out_date }}">
+        <button type="submit" class="btn btn-primary w-100">Hoàn tất đặt phòng</button>
     </form>
 
     <!-- Thông báo thành công -->
@@ -97,47 +51,81 @@
 </div>
 
 <script>
-    function updateGuestFields() {
-        var numGuests = document.getElementById('passengers').value;
-        var additionalGuestsDiv = document.getElementById('additional-guests');
-        additionalGuestsDiv.innerHTML = '';  // Clear existing fields
+<!--    function updateGuestFields() {-->
+<!--        var numGuests = document.getElementById('passengers').value;-->
+<!--        var additionalGuestsDiv = document.getElementById('additional-guests');-->
+<!--        additionalGuestsDiv.innerHTML = '';  // Clear existing fields-->
 
-        // Tạo các trường nhập cho từng khách phụ
-        for (var i = 1; i < numGuests; i++) {
-            var guestFields = `
-                <h5>Thông tin khách hàng ${i + 1}</h5>
-                <div class="mb-3">
-                    <label for="full_name_${i}" class="form-label">Tên khách hàng ${i + 1}:</label>
-                    <input type="text" id="full_name_${i}" name="full_name_${i}" class="form-control" required
-                           placeholder="Nhập tên khách hàng">
-                </div>
-                <div class="mb-3">
-                    <label for="phone_number_${i}" class="form-label">Số điện thoại ${i + 1}:</label>
-                    <input type="tel" id="phone_number_${i}" name="phone_number_${i}" class="form-control" required
-                           placeholder="Nhập số điện thoại" pattern="[0-9]{10}" title="Nhập 10 chữ số">
-                </div>
-                <div class="mb-3">
-                    <label for="identification_code_${i}" class="form-label">CCCD ${i + 1}:</label>
-                    <input type="text" id="identification_code_${i}" name="identification_code_${i}" class="form-control" required
-                           placeholder="Nhập CCCD" pattern="[0-9]{12}" title="Nhập 12 chữ số">
-                </div>
-                <div class="mb-3">
-                    <label for="client_type_id_${i}" class="form-label">Loại khách ${i + 1}:</label>
-                    <select id="client_type_id_${i}" name="client_type_id_${i}" class="form-select" required>
-                        <option value="" disabled selected>Chọn loại khách</option>
-                        {% for client_type in client_types %}
-                            <option value="{{ client_type.id }}">
-                                {{ client_type.type }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-            `;
-            additionalGuestsDiv.innerHTML += guestFields;
-        }
-    }
+<!--        // Tạo các trường nhập cho từng khách phụ-->
+<!--        for (var i = 1; i < numGuests; i++) {-->
+<!--            var guestFields = `-->
+<!--                <h5>Thông tin khách hàng ${i + 1}</h5>-->
+<!--                <div class="mb-3">-->
+<!--                    <label for="full_name_${i}" class="form-label">Tên khách hàng ${i + 1}:</label>-->
+<!--                    <input type="text" id="full_name_${i}" name="full_name_${i}" class="form-control" required-->
+<!--                           placeholder="Nhập tên khách hàng">-->
+<!--                </div>-->
+<!--                <div class="mb-3">-->
+<!--                    <label for="phone_number_${i}" class="form-label">Số điện thoại ${i + 1}:</label>-->
+<!--                    <input type="tel" id="phone_number_${i}" name="phone_number_${i}" class="form-control" required-->
+<!--                           placeholder="Nhập số điện thoại" pattern="[0-9]{10}" title="Nhập 10 chữ số">-->
+<!--                </div>-->
+<!--                <div class="mb-3">-->
+<!--                    <label for="identification_code_${i}" class="form-label">CCCD ${i + 1}:</label>-->
+<!--                    <input type="text" id="identification_code_${i}" name="identification_code_${i}" class="form-control" required-->
+<!--                           placeholder="Nhập CCCD" pattern="[0-9]{12}" title="Nhập 12 chữ số">-->
+<!--                </div>-->
+<!--                <div class="mb-3">-->
+<!--                    <label for="client_type_id_${i}" class="form-label">Loại khách ${i + 1}:</label>-->
+<!--                    <select id="client_type_id_${i}" name="client_type_id_${i}" class="form-select" required>-->
+<!--                        <option value="" disabled selected>Chọn loại khách</option>-->
+<!--                        {% for client_type in client_types %}-->
+<!--                            <option value="{{ client_type.id }}">-->
+<!--                                {{ client_type.type }}-->
+<!--                            </option>-->
+<!--                        {% endfor %}-->
+<!--                    </select>-->
+<!--                </div>-->
+<!--            `;-->
+<!--            additionalGuestsDiv.innerHTML += guestFields;-->
+<!--        }-->
+<!--    }-->
 
-    // Gọi hàm để khởi tạo các trường thông tin khi trang load
-    updateGuestFields();
+<!--    // Gọi hàm để khởi tạo các trường thông tin khi trang load-->
+<!--    updateGuestFields();-->
+
+<!--}-->
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('input', function () {
+            const roomId = this.id.split('-')[1];
+            const container = document.getElementById(`guest-info-${roomId}`);
+            container.innerHTML = '';
+            for (let i = 1; i <= this.value; i++) {
+                container.innerHTML += `
+                    <div class="mb-3">
+                        <label for="guest-${roomId}-${i}-name" class="form-label">Tên khách ${i}:</label>
+                        <input type="text" class="form-control" id="guest-${roomId}-${i}-name" name="guest-${roomId}-${i}-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="guest-${roomId}-${i}-id" class="form-label">CMND/CCCD khách ${i}:</label>
+                        <input type="text" class="form-control" id="guest-${roomId}-${i}-id" name="guest-${roomId}-${i}-id" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="guest-${roomId}-${i}-address" class="form-label">Địa chỉ khách ${i}:</label>
+                        <input type="text" class="form-control" id="guest-${roomId}-${i}-id" name="guest-${roomId}-${i}-address" required>
+                    </div>
+                    <div class="mb-2 mt-3">
+                        <select class="form-select" aria-label="Default select example" name="guest-${roomId}-${i}-type">
+                            <option value="" selected disabled>Loại khách</option>
+                            {% for i in client_types %}
+                            <option value="{{ i.id }}">{{ i.type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                `;
+            }
+        });
+    });
+
 </script>
 {% endblock %}

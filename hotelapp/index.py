@@ -10,7 +10,7 @@ from time import time
 
 import requests
 from flask import Flask, render_template, request, redirect, make_response, flash, jsonify, url_for, session
-from flask_login import login_user, logout_user, current_user
+from flask_login import login_user, logout_user, current_user, login_required
 import requests
 from flask import Flask, render_template, request, redirect, make_response, flash, jsonify, url_for
 from flask_login import login_user, logout_user, current_user
@@ -25,7 +25,7 @@ from hotelapp import app, dao, login, db, admin
 from hotelapp.decorators import loggedin
 from hotelapp.models import Room, BookingForm, RoomStatus, BookingRoomDetails, Client, UserRole, Invoice, RoomType, \
     AdImage, \
-    ClientType, Guest, Regulation, Status, PaymentMethod
+    ClientType, Regulation, Status, PaymentMethod, ClientRoomDetails
 from hotelapp.vnpay.vnpay import Vnpay
 
 # Khởi tạo Bcrypt
@@ -289,233 +289,475 @@ def rooms():
 from flask_login import current_user
 
 
-@app.route('/booking/<int:room_id>', methods=['GET', 'POST'])
-def booking(room_id):
-    room = Room.query.get_or_404(room_id)
-    client_types = dao.get_client_types()
-
-    regulation = db.session.query(Regulation).filter_by(key="max_persons_per_room").first()
-    max_passenger = regulation.value
-    # Kiểm tra người dùng đã đăng nhập chưa
-    if current_user.is_authenticated:
-        # Nếu người dùng đã đăng nhập, lấy thông tin client từ current_user
-        client = dao.get_client_by_id(current_user.client_id)
-    else:
-        # Nếu người dùng chưa đăng nhập, chuyển hướng đến trang đăng nhập
+@app.route('/booking', methods=['POST'])
+def booking():
+    if not current_user.is_authenticated:
         return redirect('/login')
+    room_ids = request.form.getlist('selected_rooms')  # Lấy danh sách các phòng được chọn
+    check_in_date = request.form.get('check_in_date')
+    check_out_date = request.form.get('check_out_date')
 
-    if request.method == 'POST':
-        try:
-            # Lấy dữ liệu từ form
-            full_name = request.form['full_name']
-            phone_number = request.form['phone_number']
-            email = request.form['email']
-            identification_code = request.form['identification_code']
-            address = request.form.get('address')
-            client_type_id = request.form.get('client_type_id')
-            passengers = request.form.get('passengers')
+    max_capacity_surcharge_percentage = dao.get_regulation_by_key("max_capacity_surcharge_percentage")
+    rooms = Room.query.filter(Room.id.in_(room_ids)).all()  # Lấy thông tin các phòng
 
-            # Lấy ngày nhận và ngày trả phòng từ form
-            checkin = request.form['check_in_date']
-            checkout = request.form['check_out_date']
-            # Kiểm tra các trường dữ liệu
-            if not full_name:
-                return render_template('booking.html', error="Vui lòng nhập tên khách hàng.")
-            if not phone_number or not phone_number.isdigit() or len(phone_number) != 10:
-                return render_template('booking.html', error="Số điện thoại không hợp lệ. Nhập 10 chữ số.")
-            if not email or '@' not in email:
-                return render_template('booking.html', error="Email không hợp lệ.")
-            if not identification_code or not identification_code.isdigit() or len(identification_code) != 12:
-                return render_template('booking.html', error="CCCD phải có đúng 12 chữ số.")
-            if not client_type_id:
-                return render_template('booking.html', error="Vui lòng chọn loại khách.")
-            if not passengers.isdigit() or int(passengers) < 1 or int(passengers) > 3:
-                return render_template('booking.html', error="Số lượng khách phải từ 1 đến 3.")
-            if not checkin or not checkout:
-                return render_template('booking.html', error="Vui lòng chọn ngày nhận và trả phòng.")
-            if checkin >= checkout:
-                return render_template('booking.html', error="Ngày trả phòng phải sau ngày nhận phòng.")
+    # Tạo booking form
+    booking_form = BookingForm(
+        check_in_date=datetime.strptime(check_in_date, '%Y-%m-%d'),
+        check_out_date=datetime.strptime(check_out_date, '%Y-%m-%d'),
+        client_id=current_user.client_id
+    )
+    db.session.add(booking_form)
+    db.session.flush()
 
-            if checkin and checkout:
-                try:
-                    checkin_date = datetime.strptime(checkin, '%Y-%m-%d')  # Định dạng ngày tháng
-                    checkout_date = datetime.strptime(checkout, '%Y-%m-%d')
+    for room in rooms:
+        passengers = int(request.form.get(f'passengers-{room.id}'))
+        is_reach_max = passengers == room.room_type.max_passenger
+        is_contain_foreigner = False
+        total = room.room_type.price_million
 
-                    # Tránh phòng bị trùng lịch
-                    booking_subquery = (
-                        db.session.query(BookingRoomDetails)
-                        .join(BookingForm)
-                        .filter(
-                            BookingRoomDetails.room_id == room_id,
-                            BookingForm.check_in_date < checkin_date,
-                            BookingForm.check_out_date > checkout_date
-                        )
-                        .exists()
-                    )
+        # Tạo booking details
+        booking_details = BookingRoomDetails(
+            booking_form_id=booking_form.id,
+            room_id=room.id,
+            passengers=passengers
+        )
+        db.session.add(booking_details)
+        db.session.flush()
 
-                    # Kiểm tra nếu phòng đã được đặt trong khoảng thời gian này
-                    if db.session.query(booking_subquery).scalar():
-                        return render_template('booking.html', room=room,
-                                               error="Phòng đã được đặt trong khoảng thời gian này!")
+        for i in range(1, passengers + 1):
+            guest_name = request.form.get(f'guest-{room.id}-{i}-name')
+            guest_id = request.form.get(f'guest-{room.id}-{i}-id')
+            guest_type = request.form.get(f'guest-{room.id}-{i}-type')
+            guest_address = request.form.get(f'guest-{room.id}-{i}-address')
 
+            client_type = dao.get_client_type_by_id(guest_type)
+            if client_type.type == "Nước Ngoài":
+                is_contain_foreigner = True
 
-
-                except ValueError:
-                    return render_template('booking.html', room=room, error="Định dạng ngày không hợp lệ!",
-                                           client_types=client_types)
-
-            # Kiểm tra sự có sẵn của phòng
-            available_status = RoomStatus.query.filter_by(status='Có sẵn').first()
-            maintenance_status = RoomStatus.query.filter_by(status='Bảo trì').first()
-
-            if not available_status:
-                raise ValueError("Trạng thái phòng 'Có sẵn' không tồn tại trong cơ sở dữ liệu.")
-            if room.room_status_id == maintenance_status.id:
-                return render_template('booking.html', room=room, error="Phòng này đang được bảo trì!")
-            if room.room_status_id != available_status.id:
-                return render_template('booking.html', room=room, error="Phòng này đã được đặt trước!")
-
-            # Kiểm tra thông tin khách hàng đã tồn tại chưa
-            if not client:
-                # Nếu chưa có, tạo mới khách hàng
-                client = Client(
-                    full_name=full_name,
-                    phone_number=phone_number,
-                    email=email,
-                    address=address,
-                    identification_code=identification_code,
-                    client_type_id=client_type_id,
-                )
-                db.session.add(client)
-                db.session.commit()
-
-            # Tạo đơn đặt phòng
-            booking_form = BookingForm(
-                check_in_date=checkin,
-                check_out_date=checkout,
-                client_id=client.client_id,
+            guest = Client(
+                full_name=guest_name,
+                identification_code=guest_id,
+                client_type_id=guest_type,
+                address=guest_address
             )
-            db.session.add(booking_form)
-            db.session.commit()
-            # Lặp qua các khách phụ
-            for i in range(1, int(passengers)):  # Lặp cho mỗi khách phụ
-                guest_full_name = request.form.get(f'full_name_{i}')
-                guest_phone_number = request.form.get(f'phone_number_{i}')
-                guest_identification_code = request.form.get(f'identification_code_{i}')
-                guest_client_type_id = request.form.get(f'client_type_id_{i}')
+            db.session.add(guest)
+            db.session.flush()
 
-                # Kiểm tra thông tin khách phụ
-                if not guest_full_name or not guest_phone_number or not guest_identification_code:
-                    return render_template('booking.html', error=f"Thông tin khách hàng phụ {i + 1} chưa đầy đủ.")
-
-                guest = Guest(
-                    full_name=request.form.get(f'full_name_{i}'),
-                    phone_number=request.form.get(f'phone_number_{i}'),
-                    identification_code=request.form.get(f'identification_code_{i}'),
-                    client_type_id=request.form.get(f'client_type_id_{i}'),
-                    booking_form_id=booking_form.id
-                )
-                db.session.add(guest)
-                db.session.commit()
-
-            # Chuyển đổi giá phòng và số lượng hành khách
-            room_price = float(room.room_type.price_million)  # Giá phòng phải là số thực
-            passengers_count = int(passengers)  # Số lượng hành khách (kiểm tra chắc chắn có giá trị hợp lệ)
-            client_type_id = int(client_type_id)  # ID loại khách
-            # Tạo đối tượng BookingRoomDetails
-            booking_detail = BookingRoomDetails(
-                booking_form_id=booking_form.id,
-                room_id=room.id,
-                passengers=passengers_count,  # Số lượng hành khách
-                total=0  # Giá trị ban đầu
+            client_room_details = ClientRoomDetails(
+                booking_details_id=booking_details.id,
+                client_id=guest.client_id
             )
+            db.session.add(client_room_details)
 
-            # Thêm đối tượng vào session
-            db.session.add(booking_detail)
-            db.session.commit()
+        # Tính tổng tiền
+        if is_reach_max:
+            total += room.room_type.price_million * max_capacity_surcharge_percentage.value
+        if is_contain_foreigner:
+            total += room.room_type.price_million * dao.get_client_type_by_type("Nước Ngoài").coefficient - room.room_type.price_million
+        booking_details.total = total
+        db.session.add(booking_details)
 
-            regulation = db.session.query(Regulation).filter_by(key="max_capacity_surcharge_percentage").first()
-            # Kiểm tra hệ số của các loại khách
-            # Convert the string dates to datetime objects
-            check_in = datetime.strptime(checkin, '%Y-%m-%d')
-            check_out = datetime.strptime(checkout, '%Y-%m-%d')
+    db.session.commit()
 
-            # Calculate the difference between the two dates
-            difference = check_out - check_in
+    return redirect(url_for('booking_summary', form_id=booking_form.id))
+    # room = Room.query.get(room_id)
+    # booking_detail = BookingRoomDetails(
+    #     booking_form_id=booking_form.id,
+    #     room_id=room.id,
+    #     passengers=passengers
+    # )
+    # db.session.add(booking_detail)
+    # room_ids = request.form.getlist('selected_rooms')  # Lấy danh sách các phòng được chọn
+    # client_types = dao.get_client_types()
+    # checkin = request.form.get('check_in_date')
+    # checkout = request.form.get('check_out_date')
+    # # max_passenger = room.room_type.max_passenger
+    # passengers_list = request.form.getlist('passengers')  # Lấy danh sách số lượng khách của từng phòng
+    # print("Room IDs:", room_ids)
+    # print("passe list: ", passengers_list)
 
-            # Get the number of days
-            total_days = difference.days
+    # if not room_ids or not checkin or not checkout:
+    #     return "Vui lòng chọn phòng, nhập ngày nhận/trả phòng.", 400
+    #
+    # rooms = Room.query.filter(Room.id.in_(room_ids)).all()
+    #
+    # if not rooms:  # Kiểm tra nếu không tìm thấy phòng nào
+    #     return "Không tìm thấy phòng nào trong danh sách đã chọn.", 404
+    #
+    # # Kiểm tra người dùng đã đăng nhập chưa
+    # if current_user.is_authenticated:
+    #     # Nếu người dùng đã đăng nhập, lấy thông tin client từ current_user
+    #     client = dao.get_client_by_id(current_user.client_id)
+    # else:
+    #     # Nếu người dùng chưa đăng nhập, chuyển hướng đến trang đăng nhập
+    #     return redirect('/login')
+    #
+    # try:
+    #     # Chuyển đổi ngày check-in và check-out
+    #     checkin_date = datetime.strptime(checkin, '%Y-%m-%d')
+    #     checkout_date = datetime.strptime(checkout, '%Y-%m-%d')
+    #
+    #     if checkin_date >= checkout_date:
+    #         return "Ngày trả phòng phải sau ngày nhận phòng.", 400
+    #
+    #     total_passengers = 0
+    #     total_price = 0
+    #
+    #     # Tạo BookingForm duy nhất cho tất cả các phòng
+    #     booking_form = BookingForm(
+    #         check_in_date=checkin_date,
+    #         check_out_date=checkout_date,
+    #         client_id=client.client_id
+    #     )
+    #     db.session.add(booking_form)
+    #     db.session.commit()
+    #
+    #     # Lặp qua danh sách các phòng để kiểm tra, lưu và tính toán
+    #     for index, room_id in enumerate(room_ids):
+    #         room = Room.query.get_or_404(room_id)
+    #         available_status = RoomStatus.query.filter_by(status='Có sẵn').first()
+    #
+    #         if room.room_status_id != available_status.id:
+    #             return f"Phòng {room.name} không khả dụng.", 400
+    #
+    #         # Số lượng hành khách cho phòng hiện tại
+    #         passengers = int(passengers_list[index])
+    #         if passengers < 1 or passengers > room.room_type.max_passenger:
+    #             return f"Số lượng khách cho phòng {room.name} phải từ 1 đến {room.room_type.max_passenger}.", 400
+    #
+    #         total_passengers += passengers
+    #
+    #         # Tính giá phòng
+    #         room_price = float(room.room_type.price_million)
+    #         total_days = (checkout_date - checkin_date).days
+    #
+    #         # Tính phụ phí nếu đạt max_passenger
+    #         regulation = db.session.query(Regulation).filter_by(key="max_capacity_surcharge_percentage").first()
+    #         surcharge_percentage = float(regulation.value) if regulation else 0
+    #
+    #         if passengers == room.room_type.max_passenger:
+    #             room_price *= (1 + surcharge_percentage / 100)
+    #
+    #         # Tạo BookingRoomDetails
+    #         booking_detail = BookingRoomDetails(
+    #             booking_form_id=booking_form.id,
+    #             room_id=room.id,
+    #             passengers=passengers,
+    #             total=room_price * total_days
+    #         )
+    #         total_price += room_price * total_days
+    #         db.session.add(booking_detail)
+    #
+    #         # Cập nhật trạng thái phòng thành "Đã đặt"
+    #         room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
+    #         db.session.commit()
+    #
+    #     # Tạo phiếu thanh toán (Invoice)
+    #     invoice = Invoice(
+    #         booking_form_id=booking_form.id,
+    #         total=total_price,
+    #         status=Status.PENDING  # Trạng thái chờ thanh toán
+    #     )
+    #     db.session.add(invoice)
+    #     db.session.commit()
+    #
+    #     # Hiển thị trang thanh toán
+    #     return render_template(
+    #         'payment.html',
+    #         booking_form=booking_form,
+    #         invoice=invoice,
+    #         total_passengers=total_passengers
+    #     )
+    #
+    # except Exception as e:
+    #     db.session.rollback()
+    #     return f"Lỗi: {str(e)}", 500
 
-            if len(client_types) < 2:
-                raise ValueError("Không đủ dữ liệu loại khách trong cơ sở dữ liệu.")
+    # if request.method == 'POST':
+    #     try:
+    #         # Lấy dữ liệu từ form
+    #         full_name = request.form['full_name']
+    #         phone_number = request.form['phone_number']
+    #         email = request.form['email']
+    #         identification_code = request.form['identification_code']
+    #         address = request.form.get('address')
+    #         client_type_id = request.form.get('client_type_id')
+    #         passengers = request.form.get('passengers')
+    #
+    #         # Lấy ngày nhận và ngày trả phòng từ form
+    #         checkin = request.form['check_in_date']
+    #         checkout = request.form['check_out_date']
+    #         # Kiểm tra các trường dữ liệu
+    #         if not full_name:
+    #             return render_template('booking.html', error="Vui lòng nhập tên khách hàng.")
+    #         if not phone_number or not phone_number.isdigit() or len(phone_number) != 10:
+    #             return render_template('booking.html', error="Số điện thoại không hợp lệ. Nhập 10 chữ số.")
+    #         if not email or '@' not in email:
+    #             return render_template('booking.html', error="Email không hợp lệ.")
+    #         if not identification_code or not identification_code.isdigit() or len(identification_code) != 12:
+    #             return render_template('booking.html', error="CCCD phải có đúng 12 chữ số.")
+    #         if not client_type_id:
+    #             return render_template('booking.html', error="Vui lòng chọn loại khách.")
+    #         if not passengers.isdigit() or int(passengers) < 1 or int(passengers) > 3:
+    #             return render_template('booking.html', error="Số lượng khách phải từ 1 đến 3.")
+    #         if not checkin or not checkout:
+    #             return render_template('booking.html', error="Vui lòng chọn ngày nhận và trả phòng.")
+    #         if checkin >= checkout:
+    #             return render_template('booking.html', error="Ngày trả phòng phải sau ngày nhận phòng.")
+    #
+    #         if checkin and checkout:
+    #             try:
+    #                 checkin_date = datetime.strptime(checkin, '%Y-%m-%d')  # Định dạng ngày tháng
+    #                 checkout_date = datetime.strptime(checkout, '%Y-%m-%d')
+    #
+    #                 # Tránh phòng bị trùng lịch
+    #                 booking_subquery = (
+    #                     db.session.query(BookingRoomDetails)
+    #                     .join(BookingForm)
+    #                     .filter(
+    #                         BookingRoomDetails.room_id == room_id,
+    #                         BookingForm.check_in_date < checkin_date,
+    #                         BookingForm.check_out_date > checkout_date
+    #                     )
+    #                     .exists()
+    #                 )
+    #
+    #                 # Kiểm tra nếu phòng đã được đặt trong khoảng thời gian này
+    #                 if db.session.query(booking_subquery).scalar():
+    #                     return render_template('booking.html', room=room,
+    #                                            error="Phòng đã được đặt trong khoảng thời gian này!")
+    #
+    #
+    #
+    #             except ValueError:
+    #                 return render_template('booking.html', room=room, error="Định dạng ngày không hợp lệ!",
+    #                                        client_types=client_types)
+    #
+    #         # Kiểm tra sự có sẵn của phòng
+    #         available_status = RoomStatus.query.filter_by(status='Có sẵn').first()
+    #         maintenance_status = RoomStatus.query.filter_by(status='Bảo trì').first()
+    #
+    #         if not available_status:
+    #             raise ValueError("Trạng thái phòng 'Có sẵn' không tồn tại trong cơ sở dữ liệu.")
+    #         if room.room_status_id == maintenance_status.id:
+    #             return render_template('booking.html', room=room, error="Phòng này đang được bảo trì!")
+    #         if room.room_status_id != available_status.id:
+    #             return render_template('booking.html', room=room, error="Phòng này đã được đặt trước!")
+    #
+    #         # Kiểm tra thông tin khách hàng đã tồn tại chưa
+    #         if not client:
+    #             # Nếu chưa có, tạo mới khách hàng
+    #             client = Client(
+    #                 full_name=full_name,
+    #                 phone_number=phone_number,
+    #                 email=email,
+    #                 address=address,
+    #                 identification_code=identification_code,
+    #                 client_type_id=client_type_id,
+    #             )
+    #             db.session.add(client)
+    #             db.session.commit()
+    #
+    #         # Tạo đơn đặt phòng
+    #         booking_form = BookingForm(
+    #             check_in_date=checkin,
+    #             check_out_date=checkout,
+    #             client_id=client.client_id,
+    #         )
+    #         db.session.add(booking_form)
+    #         db.session.commit()
+    #         # Lặp qua các khách phụ
+    #         for i in range(1, int(passengers)):  # Lặp cho mỗi khách phụ
+    #             guest_full_name = request.form.get(f'full_name_{i}')
+    #             guest_phone_number = request.form.get(f'phone_number_{i}')
+    #             guest_identification_code = request.form.get(f'identification_code_{i}')
+    #             guest_client_type_id = request.form.get(f'client_type_id_{i}')
+    #
+    #             # Kiểm tra thông tin khách phụ
+    #             if not guest_full_name or not guest_phone_number or not guest_identification_code:
+    #                 return render_template('booking.html', error=f"Thông tin khách hàng phụ {i + 1} chưa đầy đủ.")
+    #
+    #             guest = Guest(
+    #                 full_name=request.form.get(f'full_name_{i}'),
+    #                 phone_number=request.form.get(f'phone_number_{i}'),
+    #                 identification_code=request.form.get(f'identification_code_{i}'),
+    #                 client_type_id=request.form.get(f'client_type_id_{i}'),
+    #                 booking_form_id=booking_form.id
+    #             )
+    #             db.session.add(guest)
+    #             db.session.commit()
+    #
+    #         # Chuyển đổi giá phòng và số lượng hành khách
+    #         room_price = float(room.room_type.price_million)  # Giá phòng phải là số thực
+    #         passengers_count = int(passengers)  # Số lượng hành khách (kiểm tra chắc chắn có giá trị hợp lệ)
+    #         client_type_id = int(client_type_id)  # ID loại khách
+    #         # Tạo đối tượng BookingRoomDetails
+    #         booking_detail = BookingRoomDetails(
+    #             booking_form_id=booking_form.id,
+    #             room_id=room.id,
+    #             passengers=passengers_count,  # Số lượng hành khách
+    #             total=0  # Giá trị ban đầu
+    #         )
+    #
+    #
+    #         # Thêm đối tượng vào session
+    #         db.session.add(booking_detail)
+    #         db.session.commit()
+    #
+    #
+    #         regulation = db.session.query(Regulation).filter_by(key="max_capacity_surcharge_percentage").first()
+    #         # Kiểm tra hệ số của các loại khách
+    #         # Convert the string dates to datetime objects
+    #         check_in = datetime.strptime(checkin, '%Y-%m-%d')
+    #         check_out = datetime.strptime(checkout, '%Y-%m-%d')
+    #
+    #         # Calculate the difference between the two dates
+    #         difference = check_out - check_in
+    #
+    #         # Get the number of days
+    #         total_days = difference.days
+    #
+    #         if len(client_types) < 2:
+    #             raise ValueError("Không đủ dữ liệu loại khách trong cơ sở dữ liệu.")
+    #
+    #         # Tính toán tổng giá trị dựa trên số lượng hành khách và loại khách
+    #         from decimal import Decimal
+    #         # Using filter with positional arguments
+    #         # Query the BookingRoomDetails based on room_id
+    #         booking_details = db.session.query(BookingRoomDetails).filter_by(room_id=room.id).first()
+    #
+    #
+    #         # Extract booking_form_id safely
+    #         booking_form = booking_details.booking_form_id
+    #
+    #         # Query the Guest using the booking_form_id
+    #         guest = db.session.query(Guest).filter_by(booking_form_id=booking_form).first()
+    #
+    #
+    #         # Chuyển đổi room_price và các hệ số từ client_types về Decimal để tính toán chính xác
+    #         room_price_decimal = Decimal(room_price)  # Chuyển đổi room_price sang Decimal
+    #         regulation_value = Decimal(regulation.value)  # Chuyển regulation.value sang Decimal
+    #         total = 0
+    #         # Tính toán với các trường hợp khác nhau
+    #         if passengers_count == max_passenger:
+    #             total = room_price_decimal * (1 + regulation_value) * Decimal(
+    #                 total_days)  # Áp dụng phụ phí 25% khi số khách đạt tối đa
+    #
+    #         # Kiểm tra loại khách chính là người Việt (client_type_id == 1) hay người nước ngoài (client_type_id == 2)
+    #         if client_type_id == 1:  # Khách Việt
+    #             total = room_price_decimal * Decimal(client_types[0].coefficient) * Decimal(total_days)
+    #         elif client_type_id == 2:  # Khách nước ngoài
+    #             total = room_price_decimal * Decimal(client_types[1].coefficient) * Decimal(total_days)
+    #
+    #         # Kiểm tra nếu có khách phụ là người nước ngoài và áp dụng phụ phí thêm
+    #
+    #         if guest and guest.client_type_id == 2:  # Nếu khách phụ là người nước ngoài
+    #             total *= Decimal(client_types[1].coefficient)  # Áp dụng phụ phí 1.5 cho khách nước ngoài
+    #
+    #         print(f"Tổng giá: {total}")
+    #
+    #         # Cập nhật giá mới sau khi tạo
+    #         new_total =  total  # Hàm tính giá mới
+    #         booking_detail.total = new_total
+    #
+    #         # Commit lại để lưu thay đổi
+    #         db.session.commit()
+    #
+    #         db.session.add(booking_detail)
+    #
+    #
+    #         # Cập nhật trạng thái phòng
+    #         room.room_status_id = RoomStatus.query.filter_by(status="Vui lòng thanh toán").first().id
+    #         db.session.commit()
+    #
+    #         # Sau khi đặt phòng thành công, render template payment.html
+    #         booking_forms = BookingForm.query.filter_by(client_id=client.client_id).order_by(
+    #             BookingForm.id.desc()).all()
+    #         return render_template(
+    #             'payment.html',
+    #             booking_form=booking_form,
+    #             booking_forms=booking_forms
+    #         )
+    #
+    #     except Exception as e:
+    #         db.session.rollback()
+    #         return render_template('booking.html', room=room, error=f"Lỗi: {str(e)}", client_types=client_types,
+    #                                client=client, max_passenger=max_passenger)
+    #
+    # return render_template('booking.html', room=room, client_types=client_types, client=client,
+    #                        max_passenger=max_passenger)
 
-            # Tính toán tổng giá trị dựa trên số lượng hành khách và loại khách
-            from decimal import Decimal
-            # Using filter with positional arguments
-            # Query the BookingRoomDetails based on room_id
-            booking_details = db.session.query(BookingRoomDetails).filter_by(room_id=room.id).first()
 
-            # Extract booking_form_id safely
-            booking_form = booking_details.booking_form_id
+# @app.route('/booking_finalize', methods=['POST'])
+# def booking_finalize():
+#     full_name = request.form.get('full_name')
+#     phone_number = request.form.get('phone_number')
+#     email = request.form.get('email')
+#     selected_rooms = request.form.getlist('selected_rooms')
+#     check_in_date = request.form.get('check_in_date')
+#     check_out_date = request.form.get('check_out_date')
+#
+#     booking_form = BookingForm(
+#         check_in_date=datetime.strptime(check_in_date, '%Y-%m-%d'),
+#         check_out_date=datetime.strptime(check_out_date, '%Y-%m-%d'),
+#         client_id=current_user.client_id
+#     )
+#     db.session.add(booking_form)
+#     db.session.commit()
+#
+#     for room_id in selected_rooms:
+#         passengers = int(request.form.get(f'passengers-{room_id}'))
+#         for i in range(1, passengers + 1):
+#             guest_name = request.form.get(f'guest-{room_id}-{i}-name')
+#             guest_id = request.form.get(f'guest-{room_id}-{i}-id')
+#             guest = Guest(
+#                 full_name=guest_name,
+#                 identification_code=guest_id,
+#                 booking_form_id=booking_form.id
+#             )
+#             db.session.add(guest)
+#
+#         room = Room.query.get(room_id)
+#         booking_detail = BookingRoomDetails(
+#             booking_form_id=booking_form.id,
+#             room_id=room.id,
+#             passengers=passengers
+#         )
+#         db.session.add(booking_detail)
+#         room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
+#
+#     db.session.commit()
+#     return "Đặt phòng thành công!"
 
-            # Query the Guest using the booking_form_id
-            guest = db.session.query(Guest).filter_by(booking_form_id=booking_form).first()
 
-            # Chuyển đổi room_price và các hệ số từ client_types về Decimal để tính toán chính xác
-            room_price_decimal = Decimal(room_price)  # Chuyển đổi room_price sang Decimal
-            regulation_value = Decimal(regulation.value)  # Chuyển regulation.value sang Decimal
-            total = 0
-            # Tính toán với các trường hợp khác nhau
-            if passengers_count == max_passenger:
-                total = room_price_decimal * (1 + regulation_value) * Decimal(
-                    total_days)  # Áp dụng phụ phí 25% khi số khách đạt tối đa
+@app.route('/confirm_booking', methods=['POST'])
+def confirm_booking():
+    if not current_user.is_authenticated:
+        return redirect('/login')
+    room_ids = request.form.getlist('selected_rooms')  # Lấy danh sách các phòng được chọn
+    room_ids = room_ids[0].split(',')
+    print(room_ids)
+    check_in_date = request.form.get('check_in_date')
+    check_out_date = request.form.get('check_out_date')
 
-            # Kiểm tra loại khách chính là người Việt (client_type_id == 1) hay người nước ngoài (client_type_id == 2)
-            if client_type_id == 1:  # Khách Việt
-                total = room_price_decimal * Decimal(client_types[0].coefficient) * Decimal(total_days)
-            elif client_type_id == 2:  # Khách nước ngoài
-                total = room_price_decimal * Decimal(client_types[1].coefficient) * Decimal(total_days)
+    # Lấy thông tin các phòng từ database
+    rooms = Room.query.filter(Room.id.in_(room_ids)).all()
 
-            # Kiểm tra nếu có khách phụ là người nước ngoài và áp dụng phụ phí thêm
+    if not rooms:
+        return "Không tìm thấy phòng nào đã chọn.", 404
 
-            if guest and guest.client_type_id == 2:  # Nếu khách phụ là người nước ngoài
-                total *= Decimal(client_types[1].coefficient)  # Áp dụng phụ phí 1.5 cho khách nước ngoài
-
-            print(f"Tổng giá: {total}")
-
-            # Cập nhật giá mới sau khi tạo
-            new_total = total  # Hàm tính giá mới
-            booking_detail.total = new_total
-
-            # Commit lại để lưu thay đổi
-            db.session.commit()
-
-            db.session.add(booking_detail)
-
-            # Cập nhật trạng thái phòng
-            room.room_status_id = RoomStatus.query.filter_by(status="Vui lòng thanh toán").first().id
-            db.session.commit()
-
-            # Sau khi đặt phòng thành công, render template payment.html
-            booking_forms = BookingForm.query.filter_by(client_id=client.client_id).order_by(
-                BookingForm.id.desc()).all()
-            return render_template(
-                'payment.html',
-                booking_form=booking_form,
-                booking_forms=booking_forms
-            )
-
-        except Exception as e:
-            db.session.rollback()
-            return render_template('booking.html', room=room, error=f"Lỗi: {str(e)}", client_types=client_types,
-                                   client=client, max_passenger=max_passenger)
-
-    return render_template('booking.html', room=room, client_types=client_types, client=client,
-                           max_passenger=max_passenger)
+    return render_template(
+        'booking.html',
+        rooms=rooms,
+        check_in_date=check_in_date,
+        check_out_date=check_out_date
+    )
 
 
 @app.route("/forms")
 def forms():
+    if not current_user.is_authenticated:
+        return redirect('/login')
     # Lấy từ khóa tìm kiếm từ query string
     search_query = request.args.get('search', '').strip()
 
@@ -560,7 +802,7 @@ def booking_details(form_id):
     form = BookingForm.query.get_or_404(form_id)
 
     # Lấy danh sách khách ở cùng từ bảng Guest
-    guests = Guest.query.filter_by(booking_form_id=form_id).all()
+    guests = dao.get_clients_of_booking_form(form_id)
 
     # Lấy thông tin các phòng đặt
     booking_rooms = BookingRoomDetails.query.filter_by(booking_form_id=form_id).all()
@@ -580,6 +822,8 @@ def booking_details(form_id):
 
 @app.route('/checkin/<int:form_id>', methods=['GET', 'POST'])
 def checkin(form_id):
+    if not current_user.is_authenticated:
+        return redirect('/login')
     form = BookingForm.query.get_or_404(form_id)
 
     if not current_user.is_authenticated:
@@ -593,8 +837,59 @@ def checkin(form_id):
     return redirect("/forms")
 
 
-@app.route('/test-thanh-toan-momo/<int:form_id>', methods=['GET', 'POST'])
-def pay(form_id):
+@app.route('/booking-summary/<int:form_id>')
+def booking_summary(form_id):
+    if not current_user.is_authenticated:
+        return redirect('/login')
+    booking_form = BookingForm.query.get(form_id)
+    max_capacity_surcharge_percentage = dao.get_regulation_by_key("max_capacity_surcharge_percentage").value
+    foreigner_coefficient = dao.get_client_type_by_type("Nước Ngoài").coefficient
+
+    details = BookingRoomDetails.query.filter_by(booking_form_id=booking_form.id)
+    for detail in details:
+        for client_room in detail.client_room_details:
+            print(client_room.client.full_name)
+            print(client_room.client.identification_code)
+            print(client_room.client.client_type.type)
+            print(client_room.client.address)
+    # Tính toán phụ thu và tổng tiền cho từng phòng
+    for detail in details:
+        is_foreigner_present = any(
+            client_room.client.client_type.type == "Nước Ngoài"
+            for client_room in ClientRoomDetails.query.filter_by(booking_details_id=detail.id)
+        )
+        is_reach_max_capacity = detail.passengers == detail.room.room_type.max_passenger
+
+        surcharge = 0
+        if is_reach_max_capacity:
+            surcharge += detail.room.room_type.price_million * max_capacity_surcharge_percentage
+        if is_foreigner_present:
+            surcharge += detail.room.room_type.price_million * foreigner_coefficient
+
+        detail.is_foreigner_present = is_foreigner_present
+        detail.is_reach_max_capacity = is_reach_max_capacity
+        detail.surcharge = surcharge
+
+    payment_methods = PaymentMethod.query.all()
+    total = 0
+    for form_details in BookingRoomDetails.query.filter_by(booking_form_id=form_id).all():
+        total += form_details.total
+
+    return render_template(
+        'booking_summary.html',
+        booking_form=booking_form,
+        payment_methods=payment_methods,
+        booking_room_details=details,
+        max_capacity_surcharge_percentage=max_capacity_surcharge_percentage,
+        foreigner_coefficient=foreigner_coefficient,
+        total=total
+    )
+
+
+@app.route('/pay', methods=['POST'])
+def pay():
+    form_id = request.form.get('form_id')
+    payment_method_id = request.form.get('payment_method')
     print("Form ID received: ", form_id)  # Debug
     form = BookingForm.query.get_or_404(form_id)
 
@@ -602,7 +897,6 @@ def pay(form_id):
         flash("Bạn phải đăng nhập để thực hiện hành động này.", "danger")
         return redirect("/login")
 
-    payment_method_id = request.form.get('payment_method_id')
     payment_method = PaymentMethod.query.get(payment_method_id)
     if not payment_method:
         flash("Phương thức thanh toán không hợp lệ.", "danger")
@@ -668,7 +962,7 @@ def pay(form_id):
     except requests.exceptions.RequestException as e:
         flash(f'Lỗi thanh toán: {e}', 'danger')
 
-    return redirect("/forms")
+    return redirect("/")
 
 
 @app.route('/api/momo-pay', methods=['POST'])
@@ -758,13 +1052,13 @@ def momo_ipn():
         invoice = Invoice.query.filter_by(transaction_id=orderId).first()
         if invoice:
             # print(invoice.booking_form)
-            room = Room.query.get_or_404(invoice.booking_form_id.room_id.id)
+            # room = Room.query.get_or_404(invoice.booking_form_id.room_id.id)
             invoice.status = Status.SUCCESS
             form = BookingForm.query.get(invoice.booking_form_id)
             form.is_paid = True
 
             # Cập nhật trạng thái phòng sau khi thanh toán thành công
-            room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
+            # room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
             db.session.commit()
 
         return jsonify({'status': 200})  # Thanh toán thành công và trạng thái phòng đã được cập nhật
@@ -843,12 +1137,12 @@ def callback():
             invoice = Invoice.query.filter_by(transaction_id=orderId).first()
             if invoice:
                 # print(invoice.booking_form)
-                room = Room.query.get_or_404(invoice.booking_form_id.room_id.id)
+                # room = Room.query.get_or_404(invoice.booking_form.room_id.id)
                 invoice.status = Status.SUCCESS
                 form = BookingForm.query.get(invoice.booking_form_id)
                 form.is_paid = True
                 # Cập nhật trạng thái phòng sau khi thanh toán thành công
-                room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
+                # room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
                 db.session.commit()
             result['return_code'] = 1
             result['return_message'] = 'success'
@@ -892,6 +1186,7 @@ def my_booking():
 def common_attributes():
     return {
         'payment_methods': PaymentMethod.query.all(),
+        'client_types': ClientType.query.all()
     }
 
 
@@ -961,12 +1256,12 @@ def vnpay_payment_return():
 
                 if invoice:
                     # print(invoice.booking_form)
-                    room = Room.query.get_or_404(invoice.booking_form_id.room_id.id)
+                    # room = Room.query.get_or_404(invoice.booking_form_id.room_id.id)
                     invoice.status = Status.SUCCESS
                     form = BookingForm.query.get(invoice.booking_form_id)
                     form.is_paid = True
                     # Cập nhật trạng thái phòng sau khi thanh toán thành công
-                    room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
+                    # room.room_status_id = RoomStatus.query.filter_by(status="Đã đặt").first().id
                     db.session.commit()
                 app.logger.info(f"Payment success for transaction: {vnp_TxnRef}")
                 return "Payment successful!"
