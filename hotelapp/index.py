@@ -906,24 +906,11 @@ def pay():
     if payment_method.type == 'Tiền Mặt' and current_user.user_role.type == 'Receptionist':
         try:
             # Đánh dấu hóa đơn đã thanh toán
-            invoice = dao.create_invoice(form_id, payment_method.id, trans_id="CASH")
+            invoice = dao.create_invoice(form_id, payment_method.id, trans_id=f"cash-form-{form_id}")
             invoice.status = Status.SUCCESS
             form.is_paid = True  # Đánh dấu phiếu đặt phòng đã được thanh toán
             db.session.commit()
 
-            # Cập nhật trạng thái phòng (nếu cần)
-            if form.booking_room_details:  # Kiểm tra chi tiết phòng
-                room = Room.query.filter_by(id=form.booking_room_details[0].room_id).first()
-                if room:
-                    room_status = RoomStatus.query.filter_by(status="Đã thanh toán").first()
-                    if not room_status:
-                        # Nếu trạng thái "Đã thanh toán" không tồn tại, thêm vào cơ sở dữ liệu
-                        room_status = RoomStatus(status="Đã thanh toán")
-                        db.session.add(room_status)
-                        db.session.commit()
-
-                    room.room_status_id = room_status.id
-                    db.session.commit()
 
                     # Hiển thị thông báo thành công
             flash(f'Thanh toán thành công cho phiếu số {form_id}!', 'success')

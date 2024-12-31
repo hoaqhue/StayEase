@@ -18,7 +18,7 @@ app.config["PAGE_SIZE"] = 2
 app.config["CLOUDINARY_CLOUD_NAME"] = "dj4slrwsl"
 app.config["CLOUDINARY_API_KEY"] = "179444416465962"
 app.config["CLOUDINARY_API_SECRET"] = "FQBLsNVEVMPyozMSHih0PzYVxn8"
-app.config["SERVER_URL"] = "https://8118-113-180-221-214.ngrok-free.app"
+app.config["SERVER_URL"] = "https://7d8d-113-180-221-214.ngrok-free.app"
 app.config["MOMO_CREATE_URL"] = "https://test-payment.momo.vn/v2/gateway/api/create"
 app.config["ZALO_CREATE_URL"] = "https://sb-openapi.zalopay.vn/v2/create"
 
