@@ -114,12 +114,18 @@
                         <p class="card-text">
                             <strong>Loại Phòng:</strong> {{ room.room_type.type or 'Không xác định' }}
                         </p>
-                        <p class="card-text room-price">
-                            <strong>Giá:</strong>
+                        <p class="card-text room-price-day">
+                            <strong>Giá (1 đêm):</strong>
                             {{ "{:,.0f}".format(room.room_type.price_million) if room.room_type.price_million else 'N/A'
                             }}
                             VND
                         </p>
+                        <p class="card-text room-price">
+                            <strong>Giá ({{ stay_duration }} đêm):</strong>
+                            {{ "{:,.0f}".format(room.room_type.price_million * stay_duration) if room.room_type.price_million else 'N/A' }}
+                            VND
+                        </p>
+
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="room-{{ room.id }}"
                                    name="selected_rooms"
@@ -175,25 +181,31 @@
         <ul class="pagination justify-content-center">
             {% if pagination.has_prev %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ pagination.prev_num }}&per_page={{ pagination.per_page }}&check_in_date={{ check_in_date }}&check_out_date={{ check_out_date }}&ticket_class={{ selected_room_type }}" aria-label="Previous">
+                <a class="page-link"
+                   href="?page={{ pagination.prev_num }}&per_page={{ pagination.per_page }}&check_in_date={{ check_in_date }}&check_out_date={{ check_out_date }}&ticket_class={{ selected_room_type }}"
+                   aria-label="Previous">
                     <span aria-hidden="true">&laquo;</span>
                 </a>
             </li>
             {% endif %}
 
             {% for page in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
-                {% if page %}
-                    <li class="page-item {% if page == pagination.page %}active{% endif %}">
-                        <a class="page-link" href="?page={{ page }}&per_page={{ pagination.per_page }}&check_in_date={{ check_in_date }}&check_out_date={{ check_out_date }}&ticket_class={{ selected_room_type }}">{{ page }}</a>
-                    </li>
-                {% else %}
-                    <li class="page-item disabled"><span class="page-link">...</span></li>
-                {% endif %}
+            {% if page %}
+            <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                <a class="page-link"
+                   href="?page={{ page }}&per_page={{ pagination.per_page }}&check_in_date={{ check_in_date }}&check_out_date={{ check_out_date }}&ticket_class={{ selected_room_type }}">{{
+                    page }}</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
             {% endfor %}
 
             {% if pagination.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ pagination.next_num }}&per_page={{ pagination.per_page }}&check_in_date={{ check_in_date }}&check_out_date={{ check_out_date }}&ticket_class={{ selected_room_type }}" aria-label="Next">
+                <a class="page-link"
+                   href="?page={{ pagination.next_num }}&per_page={{ pagination.per_page }}&check_in_date={{ check_in_date }}&check_out_date={{ check_out_date }}&ticket_class={{ selected_room_type }}"
+                   aria-label="Next">
                     <span aria-hidden="true">&raquo;</span>
                 </a>
             </li>
@@ -222,13 +234,14 @@ function updateBadgeCount() {
         badgeCount.style.display = 'none';
     }
 }
-
 checkboxes.forEach(checkbox => {
     checkbox.addEventListener('change', function () {
         const roomName = this.closest('.card').querySelector('.card-title').textContent.trim();
-        const priceText = this.closest('.card').querySelector('.room-price').textContent;
-        const roomPrice = parseFloat(priceText.split(':')[1].replace(/,/g, '').replace('VND', '').trim());
-        console.log(priceText)
+        const priceText = this.closest('.card').querySelector('.room-price-day').textContent;
+        const roomPricePerDay = parseFloat(priceText.split(':')[1].replace(/,/g, '').replace('VND', '').trim());
+        const stayDuration = parseInt(document.getElementById('check_out_date').valueAsDate - document.getElementById('check_in_date').valueAsDate) / (1000 * 3600 * 24);
+        const roomPrice = roomPricePerDay * stayDuration;
+
         if (this.checked) {
             selectedRooms.push({ id: this.value, name: roomName, price: roomPrice });
             toast.show();
@@ -240,6 +253,7 @@ checkboxes.forEach(checkbox => {
         updateBadgeCount();
     });
 });
+
 
 function updateSelectedRoomsList() {
     selectedRoomsList.innerHTML = '';
@@ -260,8 +274,8 @@ function updateSelectedRoomsList() {
 
     totalPriceElement.textContent = `${totalPrice.toLocaleString()} VND`;
     hiddenSelectedRooms.value = selectedRooms.map(room => room.id).join(',');
-    console.log(hiddenSelectedRooms.value)
 }
+
 
 document.getElementById('openDrawerButton').addEventListener('click', () => {
     updateSelectedRoomsList(); // Đồng bộ khi mở Drawer

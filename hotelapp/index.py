@@ -239,6 +239,12 @@ def rooms():
     # Lấy các tham số lọc từ query string
     checkin = request.args.get('check_in_date')
     checkout = request.args.get('check_out_date')
+    stay_duration = 1  # Mặc định 1 ngày nếu không có thông tin ngày trả
+
+    if checkin and checkout:
+        check_in_date = datetime.strptime(checkin, '%Y-%m-%d')
+        check_out_date = datetime.strptime(checkout, '%Y-%m-%d')
+        stay_duration = (check_out_date - check_in_date).days
     room_type_id = request.args.get('ticket_class', type=int)
 
     # Lấy số trang và kích thước trang từ query string (mặc định page=1, per_page=10)
@@ -282,7 +288,8 @@ def rooms():
         checkin=checkin,
         checkout=checkout,
         selected_room_type=room_type_id,
-        pagination=pagination
+        pagination=pagination,
+        stay_duration=stay_duration,
     )
 
 
@@ -294,16 +301,19 @@ def booking():
     if not current_user.is_authenticated:
         return redirect('/login')
     room_ids = request.form.getlist('selected_rooms')  # Lấy danh sách các phòng được chọn
-    check_in_date = request.form.get('check_in_date')
-    check_out_date = request.form.get('check_out_date')
+    check_in_date = datetime.strptime(request.form.get('check_in_date'), '%Y-%m-%d')
+    check_out_date = datetime.strptime(request.form.get('check_out_date'), '%Y-%m-%d')
+
+    # Tính số ngày ở
+    stay_duration = (check_out_date - check_in_date).days
 
     max_capacity_surcharge_percentage = dao.get_regulation_by_key("max_capacity_surcharge_percentage")
     rooms = Room.query.filter(Room.id.in_(room_ids)).all()  # Lấy thông tin các phòng
 
     # Tạo booking form
     booking_form = BookingForm(
-        check_in_date=datetime.strptime(check_in_date, '%Y-%m-%d'),
-        check_out_date=datetime.strptime(check_out_date, '%Y-%m-%d'),
+        check_in_date=check_in_date,
+        check_out_date=check_out_date,
         client_id=current_user.client_id
     )
     db.session.add(booking_form)
@@ -313,7 +323,7 @@ def booking():
         passengers = int(request.form.get(f'passengers-{room.id}'))
         is_reach_max = passengers == room.room_type.max_passenger
         is_contain_foreigner = False
-        total = room.room_type.price_million
+        total = room.room_type.price_million * stay_duration  # Tính tổng tiền cơ bản (nhân số ngày ở)
 
         # Tạo booking details
         booking_details = BookingRoomDetails(
@@ -349,17 +359,18 @@ def booking():
             )
             db.session.add(client_room_details)
 
-        # Tính tổng tiền
+        # Tính tổng tiền với phụ phí
         if is_reach_max:
-            total += room.room_type.price_million * max_capacity_surcharge_percentage.value
+            total += room.room_type.price_million * max_capacity_surcharge_percentage.value * stay_duration
         if is_contain_foreigner:
-            total += room.room_type.price_million * dao.get_client_type_by_type("Nước Ngoài").coefficient - room.room_type.price_million
+            total += (room.room_type.price_million * dao.get_client_type_by_type("Nước Ngoài").coefficient - room.room_type.price_million) * stay_duration
         booking_details.total = total
         db.session.add(booking_details)
 
     db.session.commit()
 
     return redirect(url_for('booking_summary', form_id=booking_form.id))
+
     # room = Room.query.get(room_id)
     # booking_detail = BookingRoomDetails(
     #     booking_form_id=booking_form.id,
@@ -845,13 +856,12 @@ def booking_summary(form_id):
     max_capacity_surcharge_percentage = dao.get_regulation_by_key("max_capacity_surcharge_percentage").value
     foreigner_coefficient = dao.get_client_type_by_type("Nước Ngoài").coefficient
 
-    details = BookingRoomDetails.query.filter_by(booking_form_id=booking_form.id)
-    for detail in details:
-        for client_room in detail.client_room_details:
-            print(client_room.client.full_name)
-            print(client_room.client.identification_code)
-            print(client_room.client.client_type.type)
-            print(client_room.client.address)
+    check_in_date = booking_form.check_in_date
+    check_out_date = booking_form.check_out_date
+    stay_duration = (check_out_date - check_in_date).days
+
+    details = BookingRoomDetails.query.filter_by(booking_form_id=booking_form.id).all()
+
     # Tính toán phụ thu và tổng tiền cho từng phòng
     for detail in details:
         is_foreigner_present = any(
@@ -862,18 +872,19 @@ def booking_summary(form_id):
 
         surcharge = 0
         if is_reach_max_capacity:
-            surcharge += detail.room.room_type.price_million * max_capacity_surcharge_percentage
+            surcharge += detail.room.room_type.price_million * max_capacity_surcharge_percentage * stay_duration
         if is_foreigner_present:
-            surcharge += detail.room.room_type.price_million * foreigner_coefficient
+            surcharge += (
+                                     detail.room.room_type.price_million * foreigner_coefficient - detail.room.room_type.price_million) * stay_duration
 
         detail.is_foreigner_present = is_foreigner_present
         detail.is_reach_max_capacity = is_reach_max_capacity
         detail.surcharge = surcharge
+        detail.total = (detail.room.room_type.price_million * stay_duration) + surcharge
+        detail.stay_duration = stay_duration  # Thêm số ngày ở vào detail để dùng trong template
 
     payment_methods = PaymentMethod.query.all()
-    total = 0
-    for form_details in BookingRoomDetails.query.filter_by(booking_form_id=form_id).all():
-        total += form_details.total
+    total = sum(detail.total for detail in details)
 
     return render_template(
         'booking_summary.html',

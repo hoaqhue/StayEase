@@ -47,20 +47,27 @@
                 {% endfor %}
                 </tbody>
             </table>
+            <p><strong>Giá cơ bản (theo ngày):</strong> {{ "{:,.0f}".format(detail.room.room_type.price_million) }} VND
+            </p>
+            <p><strong>Số ngày ở:</strong> {{ detail.stay_duration }} ngày</p>
             <p><strong>Phụ Thu:</strong></p>
             <ul>
                 {% if detail.is_reach_max_capacity %}
-                <li>Phụ thu vượt công suất: {{ "{:,.0f}".format(detail.room.room_type.price_million *
-                    max_capacity_surcharge_percentage) }} VND
+                <li>Phụ thu vượt công suất ({{ detail.stay_duration }} ngày):
+                    {{ "{:,.0f}".format(detail.room.room_type.price_million * max_capacity_surcharge_percentage *
+                    detail.stay_duration) }} VND
                 </li>
                 {% endif %}
                 {% if detail.is_foreigner_present %}
-                <li>Phụ thu khách nước ngoài: {{ "{:,.0f}".format(detail.room.room_type.price_million *
-                    foreigner_coefficient - detail.room.room_type.price_million) }} VND
+                <li>Phụ thu khách nước ngoài ({{ detail.stay_duration }} ngày):
+                    {{ "{:,.0f}".format((detail.room.room_type.price_million * foreigner_coefficient -
+                    detail.room.room_type.price_million) * detail.stay_duration) }} VND
                 </li>
                 {% endif %}
             </ul>
-            <p><strong>Tổng cộng:</strong> {{ "{:,.0f}".format(detail.total) }} VND</p>
+            <p><strong>Tổng cộng ({{ detail.stay_duration }} ngày):</strong> {{ "{:,.0f}".format(detail.total) }} VND
+            </p>
+
         </div>
     </div>
     {% endfor %}
